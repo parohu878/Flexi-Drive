@@ -1,0 +1,139 @@
+/* Mobile bottom nav (only shown on mobile) */
+.mobile-nav {
+  display: none;
+  background: rgba(5,5,10,.97);
+  border-top: 1px solid rgba(155,77,202,.15);
+  backdrop-filter: blur(12px);
+  position: sticky;
+  bottom: 0;
+  z-index: 200;
+}
+
+@media (max-width: 768px) {
+  .mobile-nav {
+    display: flex;
+  }
+  .desktop-footer { display: none; }
+}
+
+.mn-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color .2s;
+}
+
+.mn-icon { font-size: 20px; margin-bottom: 2px; }
+.mn-label {
+  font-size: 9.5px;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--td);
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+}
+.mn-item.active .mn-label { color: #c47dff; }
+.mn-item.active .mn-icon { filter: drop-shadow(0 0 4px rgba(155,77,202,.7)); }
+
+/* Desktop footer */
+.desktop-footer {
+  background: var(--bg2);
+  border-top: 1px solid rgba(155,77,202,.1);
+  margin-top: auto;
+}
+
+.df-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 48px 40px 32px;
+  display: flex;
+  justify-content: space-between;
+  gap: 48px;
+}
+
+.df-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.df-logo {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #9b4dca, #e040fb);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  font-weight: 900;
+  color: #fff;
+  flex-shrink: 0;
+  box-shadow: 0 0 14px rgba(155,77,202,.4);
+}
+
+.df-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: .1em;
+  margin-bottom: 2px;
+}
+.df-tagline { font-size: 11px; color: var(--td); }
+
+.df-links {
+  display: flex;
+  gap: 48px;
+}
+
+.dfl-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dfl-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+  color: #c47dff;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.dfl-col button {
+  background: none;
+  border: none;
+  color: var(--td);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  padding: 0;
+  transition: color .2s;
+}
+.dfl-col button:hover { color: #c47dff; }
+
+.df-bottom {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 16px 40px;
+  border-top: 1px solid rgba(255,255,255,.05);
+  display: flex;
+  justify-content: space-between;
+  font-size: 11.5px;
+  color: var(--tm);
+}
+
+@media (max-width: 900px) {
+  .df-inner { flex-direction: column; gap: 28px; }
+  .df-links { flex-wrap: wrap; gap: 24px; }
+}
