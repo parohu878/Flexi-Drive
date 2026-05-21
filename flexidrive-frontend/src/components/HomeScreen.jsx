@@ -3,6 +3,8 @@ import './HomeScreen.css';
 import CarMiniature from './CarMiniature';
 import Icon from './Icon';
 import { useFavorites } from '../context/FavoritesContext';
+import CustomSelect from './CustomSelect';
+import CustomDatePicker from './CustomDatePicker';
 
 export default function HomeScreen({ navigate, cars, loading }) {
   const [searchLoc, setSearchLoc] = useState('');
@@ -59,7 +61,7 @@ export default function HomeScreen({ navigate, cars, loading }) {
         </div>
         <div className="hero-car-scene">
           <div className="scene-glow" />
-          <CarMiniature size="large" />
+          <img src="/hero-bg.png" alt="FlexiDrive coche" className="hero-ai-img" />
         </div>
       </section>
 
@@ -73,28 +75,19 @@ export default function HomeScreen({ navigate, cars, loading }) {
                 value={searchLoc} onChange={e => setSearchLoc(e.target.value)} />
             </div>
             <div className="sw-divider" />
-            <div className="sw-field">
-              <label className="sw-label"><Icon name="calendar" size={12} color="#c47dff" /> Data d'inici</label>
-              <input className="sw-input" type="date"
-                value={searchDate} onChange={e => setSearchDate(e.target.value)} />
+            <div className="sw-field sw-field-date">
+              <span className="sw-label"><Icon name="calendar" size={12} color="#c47dff" /> Data d'inici</span>
+              <CustomDatePicker value={searchDate} onChange={e => setSearchDate(e.target.value)} />
             </div>
             <div className="sw-divider" />
             <div className="sw-field">
               <label className="sw-label"><Icon name="clock" size={12} color="#c47dff" /> Hores</label>
-              <select className="sw-input sw-select"
-                value={searchHours} onChange={e => setSearchHours(e.target.value)}>
-                <option>1 hora</option><option>2 hores</option>
-                <option>4 hores</option><option>Tot el dia</option>
-              </select>
+              <CustomSelect value={searchHours} onChange={e => setSearchHours(e.target.value)} options={['1 hora', '2 hores', '4 hores', 'Tot el dia']} />
             </div>
             <div className="sw-divider" />
             <div className="sw-field">
               <label className="sw-label"><Icon name="fuel" size={12} color="#c47dff" /> Combustible</label>
-              <select className="sw-input sw-select"
-                value={searchFuel} onChange={e => setSearchFuel(e.target.value)}>
-                <option>Tots</option><option>Gasolina</option>
-                <option>Diésel</option><option>Eléctrico</option><option>Híbrido</option>
-              </select>
+              <CustomSelect value={searchFuel} onChange={e => setSearchFuel(e.target.value)} options={['Tots', 'Gasolina', 'Diésel', 'Eléctrico', 'Híbrido']} />
             </div>
             <button className="sw-btn" onClick={() => navigate('search')}>
               <Icon name="search" size={16} />
@@ -249,39 +242,11 @@ export default function HomeScreen({ navigate, cars, loading }) {
               <button className="btn-primary" onClick={() => navigate('publish')}>Publicar el meu coche</button>
             </div>
             <div className="cta-visual">
-              <CarMiniature size="medium" />
+              <img src="/cta-car.png" alt="Publica el teu cotxe" className="cta-ai-img" />
               <div className="cta-earnings">
                 <div className="ce-label">Guanys estimats</div>
                 <div className="ce-amount">+ 350€ <span>/mes</span></div>
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── APP CTA ── */}
-      <section className="app-cta-section">
-        <div className="section-inner">
-          <div className="app-cta">
-            <div className="ac-content">
-              <h2 className="ac-title">Descarrega l'app</h2>
-              <p className="ac-desc">Reserva des del mòbil, rebuda notificacions en temps real i gestiona tot des de la palma de la mà.</p>
-              <div className="ac-buttons">
-                <button className="ac-btn">
-                  <span className="ac-btn-icon"><Icon name="apple" size={18} /></span>
-                  <div><div className="ac-btn-sub">Disponible a</div><div className="ac-btn-store">App Store</div></div>
-                </button>
-                <button className="ac-btn">
-                  <span className="ac-btn-icon"><Icon name="play" size={14} color="#c47dff" /></span>
-                  <div><div className="ac-btn-sub">Disponible a</div><div className="ac-btn-store">Google Play</div></div>
-                </button>
-              </div>
-            </div>
-            <div className="ac-badge">
-              <div className="ac-qr">
-                <div className="qr-inner"><Icon name="qr" size={32} color="#c47dff" /></div>
-              </div>
-              <div className="ac-qr-label">Escaneja per baixar</div>
             </div>
           </div>
         </div>
@@ -306,8 +271,10 @@ function CarCard({ car, onClick }) {
         <CarMiniature size="small" color={car.color} />
         <div className="cc-overlay" />
         <div className="cc-price">{price}€<span>/h</span></div>
-        <div className="cc-avail">Disponible</div>
-        {rating >= 4.9 && <div className="cc-top"><Icon name="star" size={10} color="#000" /> Top</div>}
+        <div style={{ position: 'absolute', top: 8, left: 8, display: 'flex', gap: 6, zIndex: 2 }}>
+          <div className="cc-avail" style={{ position: 'static', margin: 0 }}>Disponible</div>
+          {rating >= 4.9 && <div className="cc-top" style={{ position: 'static', margin: 0 }}><Icon name="star" size={10} color="#000" /> Top</div>}
+        </div>
         <button
           className={`fav-btn cc-fav ${fav ? 'active' : ''}`}
           onClick={(e) => { e.stopPropagation(); toggleFavorite(car.id); }}

@@ -69,6 +69,28 @@ export default function CarDetail({ car, navigate, showToast, onRequireAuth }) {
     finally { setReserving(false); }
   };
 
+  const handleContactOwner = () => {
+    if (!isAuthenticated) {
+      onRequireAuth();
+      return;
+    }
+    const chats = JSON.parse(localStorage.getItem('fd_chats') || '[]');
+    let chat = chats.find(c => c.name === ownerName);
+    if (!chat) {
+      chat = {
+        id: 'chat_' + Date.now().toString(),
+        name: ownerName,
+        messages: [
+          { sender: 'them', text: `Hola! Estàs interessat en el meu vehicle (${car.name})? Pregunta'm el que vulguis!`, ts: Date.now() }
+        ]
+      };
+      chats.push(chat);
+      localStorage.setItem('fd_chats', JSON.stringify(chats));
+    }
+    localStorage.setItem('fd_active_chat_id', chat.id);
+    navigate('chat');
+  };
+
   const allReviews = reviews.length > 0 ? reviews : (car.reviewList || []);
 
   return (
@@ -149,7 +171,7 @@ export default function CarDetail({ car, navigate, showToast, onRequireAuth }) {
                   <div className="oc-sub">Propietari verificat · {reviewCount} alquileres</div>
                 </div>
                 <div className="oc-rating"><Icon name="star" size={12} color="#f5c518" /> {rating}</div>
-                <button className="btn-ghost-sm oc-msg"><Icon name="message" size={12} /> Contactar</button>
+                <button className="btn-ghost-sm oc-msg" onClick={handleContactOwner}><Icon name="message" size={12} /> Contactar</button>
               </div>
 
               {car.lat && car.lng && (

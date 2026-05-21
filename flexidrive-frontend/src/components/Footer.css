@@ -10,9 +10,7 @@
 }
 
 @media (max-width: 768px) {
-  .mobile-nav {
-    display: flex;
-  }
+  .mobile-nav { display: flex; }
   .desktop-footer { display: none; }
 }
 
@@ -27,7 +25,6 @@
   cursor: pointer;
   transition: color .2s;
 }
-
 .mn-icon { font-size: 20px; margin-bottom: 2px; }
 .mn-label {
   font-size: 9.5px;
@@ -40,72 +37,147 @@
 .mn-item.active .mn-label { color: #c47dff; }
 .mn-item.active .mn-icon { filter: drop-shadow(0 0 4px rgba(155,77,202,.7)); }
 
-/* Desktop footer */
+/* ── Desktop footer ── */
 .desktop-footer {
-  background: var(--bg2);
-  border-top: 1px solid rgba(155,77,202,.1);
+  background: #030208;
+  border-top: 1px solid rgba(155,77,202,.15);
   margin-top: auto;
+  position: relative;
+  overflow: hidden;
+}
+.desktop-footer::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(155,77,202,.6) 30%, rgba(224,64,251,.6) 70%, transparent 100%);
+}
+
+.df-top-bar {
+  position: absolute;
+  top: -120px; left: -80px;
+  width: 320px; height: 320px;
+  background: radial-gradient(circle, rgba(155,77,202,.08) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
 }
 
 .df-inner {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 48px 40px 32px;
-  display: flex;
-  justify-content: space-between;
+  padding: 56px 40px 40px;
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1fr 1fr;
   gap: 48px;
 }
+
+/* Brand column */
+.df-brand-col { display: flex; flex-direction: column; gap: 20px; }
 
 .df-brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 .df-logo {
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   background: linear-gradient(135deg, #9b4dca, #e040fb);
-  border-radius: 50%;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 0 24px rgba(155,77,202,.5);
+  position: relative;
+}
+.df-logo-text {
   font-family: 'Orbitron', sans-serif;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 900;
   color: #fff;
-  flex-shrink: 0;
-  box-shadow: 0 0 14px rgba(155,77,202,.4);
+  position: relative;
+  z-index: 1;
+}
+.df-logo-ring {
+  position: absolute;
+  inset: -3px;
+  border-radius: 17px;
+  border: 1px solid rgba(196,125,255,.3);
+  animation: ring-pulse 3s ease-in-out infinite;
+}
+@keyframes ring-pulse {
+  0%, 100% { opacity: .5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.04); }
 }
 
 .df-name {
   font-family: 'Orbitron', sans-serif;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
   color: #fff;
-  letter-spacing: .1em;
-  margin-bottom: 2px;
+  letter-spacing: .12em;
+  margin-bottom: 3px;
+}
+.df-name-accent {
+  background: linear-gradient(135deg, #c47dff, #e040fb);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 .df-tagline { font-size: 11px; color: var(--td); }
 
-.df-links {
+.df-about {
+  font-size: 13px;
+  color: var(--td);
+  line-height: 1.7;
+  max-width: 300px;
+  margin: 0;
+}
+
+.df-socials {
   display: flex;
-  gap: 48px;
+  gap: 10px;
+}
+.social-btn {
+  width: 36px; height: 36px;
+  background: rgba(155,77,202,.08);
+  border: 1px solid rgba(155,77,202,.2);
+  border-radius: 10px;
+  color: var(--td);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .2s;
+}
+.social-btn:hover {
+  background: rgba(155,77,202,.2);
+  border-color: rgba(155,77,202,.5);
+  color: #c47dff;
+  transform: translateY(-2px);
+}
+
+/* Links columns */
+.df-links {
+  display: contents;
 }
 
 .dfl-col {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .dfl-title {
-  font-size: 11px;
+  font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: .09em;
+  letter-spacing: .12em;
   color: #c47dff;
   font-weight: 700;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
+  font-family: 'Rajdhani', sans-serif;
 }
 
 .dfl-col button {
@@ -113,27 +185,130 @@
   border: none;
   color: var(--td);
   font-family: 'Rajdhani', sans-serif;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 500;
   cursor: pointer;
   text-align: left;
   padding: 0;
-  transition: color .2s;
+  transition: color .2s, transform .15s;
+  line-height: 1.4;
 }
-.dfl-col button:hover { color: #c47dff; }
+.dfl-col button:hover {
+  color: #e8e8f2;
+  transform: translateX(3px);
+}
 
+/* Newsletter */
+.df-newsletter { display: flex; flex-direction: column; gap: 12px; }
+
+.df-nl-desc {
+  font-size: 12.5px;
+  color: var(--td);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.df-nl-form {
+  display: flex;
+  gap: 8px;
+}
+
+.df-nl-input {
+  flex: 1;
+  background: rgba(155,77,202,.07);
+  border: 1px solid rgba(155,77,202,.2);
+  border-radius: 10px;
+  padding: 9px 14px;
+  color: var(--t);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+  outline: none;
+  transition: border-color .2s;
+  min-width: 0;
+}
+.df-nl-input::placeholder { color: var(--tm); }
+.df-nl-input:focus { border-color: rgba(155,77,202,.5); }
+
+.df-nl-btn {
+  background: linear-gradient(135deg, #9b4dca, #e040fb);
+  border: none;
+  color: #fff;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  padding: 9px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: box-shadow .2s, transform .2s;
+}
+.df-nl-btn:hover {
+  box-shadow: 0 4px 16px rgba(155,77,202,.5);
+  transform: translateY(-1px);
+}
+
+.df-trust-badges {
+  display: flex;
+  gap: 14px;
+}
+.df-trust-item {
+  font-size: 11px;
+  color: var(--td);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Bottom bar */
 .df-bottom {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 16px 40px;
+  padding: 18px 40px;
   border-top: 1px solid rgba(255,255,255,.05);
   display: flex;
   justify-content: space-between;
-  font-size: 11.5px;
-  color: var(--tm);
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
-@media (max-width: 900px) {
-  .df-inner { flex-direction: column; gap: 28px; }
-  .df-links { flex-wrap: wrap; gap: 24px; }
+.df-bottom-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--tm);
+}
+.df-sep { opacity: .4; }
+
+.df-bottom-right {
+  display: flex;
+  gap: 16px;
+}
+.df-bottom-badge {
+  font-size: 11px;
+  color: var(--td);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 6px;
+  padding: 4px 10px;
+}
+
+@media (max-width: 1100px) {
+  .df-inner { grid-template-columns: 1fr 1fr; gap: 32px; }
+  .df-brand-col { grid-column: 1 / -1; }
+  .df-newsletter { grid-column: 1 / -1; }
+}
+
+@media (max-width: 700px) {
+  .df-inner { grid-template-columns: 1fr; padding: 32px 24px 24px; }
+  .df-brand-col { grid-column: auto; }
+  .df-newsletter { grid-column: auto; }
+  .df-bottom { flex-direction: column; text-align: center; padding: 16px 24px; }
+  .df-bottom-right { justify-content: center; }
 }

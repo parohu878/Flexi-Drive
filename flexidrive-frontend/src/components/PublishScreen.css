@@ -312,6 +312,7 @@ select.field-input option { background: #13101e; color: var(--t); }
 /* Field error */
 .field-error { border-color: rgba(255,50,50,.5) !important; }
 .field-error-msg { font-size: 11px; color: #ff6b6b; margin-top: 3px; display: block; }
+.field-hint { font-size: 11px; color: var(--td); margin-top: 4px; display: block; font-style: italic; }
 
 /* Form nav */
 .form-nav {

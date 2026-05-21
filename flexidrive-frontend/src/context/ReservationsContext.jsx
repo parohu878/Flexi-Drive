@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-
+import { DEMO_RESERVATIONS } from '../services/demoData';
 
 const ReservationsContext = createContext(null);
 const STORAGE_KEY = 'fd_reservations';
@@ -8,8 +8,8 @@ export function ReservationsProvider({ children }) {
   const [reservations, setReservations] = useState(() => {
     try {
       const stored = JSON.parse(localStorage.getItem(STORAGE_KEY));
-      return stored && stored.length > 0 ? stored : [];
-    } catch { return []; }
+      return stored && stored.length > 0 ? stored : DEMO_RESERVATIONS;
+    } catch { return DEMO_RESERVATIONS; }
   });
 
   useEffect(() => {

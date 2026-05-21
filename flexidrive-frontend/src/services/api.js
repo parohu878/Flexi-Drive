@@ -22,6 +22,19 @@ async function request(endpoint, options = {}) {
 }
 
 // ── Mappers ────────────────────────────────────────────────────────
+const fuelMapToFrontend = {
+  'gasolina': 'Gasolina',
+  'diesel': 'Diésel',
+  'electrico': 'Eléctrico',
+  'hibrido': 'Híbrido',
+  'glp': 'GLP'
+};
+
+const transMapToFrontend = {
+  'manual': 'Manual',
+  'automatico': 'Automático'
+};
+
 const mapVehicleToCar = (v) => ({
   id: v.id,
   name: `${v.marca} ${v.modelo}`,
@@ -34,8 +47,8 @@ const mapVehicleToCar = (v) => ({
   lng: v.longitud || 2.1699,
   pricePerHour: v.precio_dia, // Mostramos precio por día como precio general
   seats: v.plazas,
-  fuel: v.combustible,
-  transmission: v.transmision,
+  fuel: fuelMapToFrontend[v.combustible] || v.combustible,
+  transmission: transMapToFrontend[v.transmision] || v.transmision,
   color: ['#9b4dca', '#e040fb', '#4db8ff', '#5dcaa5', '#ff8c42', '#c47dff'][Math.floor(Math.random() * 6)],
   rating: 5.0,
   totalReviews: 0,
@@ -115,14 +128,27 @@ export const carsService = {
   },
 
   createCar: async (data) => {
+    const fuelMapToDb = {
+      'Gasolina': 'gasolina',
+      'Diésel': 'diesel',
+      'Eléctrico': 'electrico',
+      'Híbrido': 'hibrido',
+      'GLP': 'glp'
+    };
+
+    const transMapToDb = {
+      'Manual': 'manual',
+      'Automático': 'automatico'
+    };
+
     const payload = {
       marca: data.make,
       modelo: data.model,
       matricula: '0000XXX', // Default ya que frontend no lo pide
       tipo: 'turismo',
-      combustible: data.fuel,
+      combustible: fuelMapToDb[data.fuel] || data.fuel?.toLowerCase() || 'gasolina',
       plazas: data.seats || 5,
-      transmision: data.transmission,
+      transmision: transMapToDb[data.transmission] || data.transmission?.toLowerCase() || 'manual',
       descripcion: data.description || '',
       precio_dia: data.pricePerHour, // Frontend price is used as day price
       latitud: 41.38,

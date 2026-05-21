@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from './context/AuthContext';
 import { carsService } from './services/api';
+import { DEMO_CARS } from './services/demoData';
 
 import Navbar from './components/Navbar';
 import HomeScreen from './components/HomeScreen';
@@ -8,6 +9,7 @@ import SearchScreen from './components/SearchScreen';
 import CarDetail from './components/CarDetail';
 import PublishScreen from './components/PublishScreen';
 import ProfileScreen from './components/ProfileScreen';
+import ChatScreen from './components/ChatScreen';
 import Footer from './components/Footer';
 import AuthModal from './components/AuthModal';
 import Icon from './components/Icon';
@@ -38,8 +40,8 @@ export default function App() {
       setCars([...apiCars, ...published.filter(pc => !apiCars.find(ac => ac.id === pc.id))]);
     } catch (err) {
       console.error('Error loading cars:', err);
-      // No fallback to DEMO_CARS anymore
-      setCars([]);
+      // Ultimate fallback
+      setCars(DEMO_CARS);
     } finally {
       setCarsLoading(false);
     }
@@ -95,6 +97,7 @@ export default function App() {
         {screen === 'detail'  && <CarDetail car={selectedCar} navigate={navigate} showToast={showToast} onRequireAuth={() => setShowAuth(true)} />}
         {screen === 'publish' && <PublishScreen showToast={showToast} navigate={navigate} onCarCreated={loadCars} />}
         {screen === 'profile' && <ProfileScreen navigate={navigate} showToast={showToast} cars={cars} onRequireAuth={() => setShowAuth(true)} />}
+        {screen === 'chat'    && <ChatScreen navigate={navigate} />}
       </main>
       <Footer navigate={navigate} screen={screen} />
 

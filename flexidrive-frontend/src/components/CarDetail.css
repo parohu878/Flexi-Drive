@@ -97,19 +97,26 @@
 }
 
 .info-cell {
-  background: var(--bg3);
-  border: 1px solid rgba(255,255,255,.07);
-  border-radius: 12px;
-  padding: 12px 16px;
+  background: rgba(18, 15, 32, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: var(--r);
+  padding: 14px 18px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 .ic-label {
-  font-size: 10px;
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: .07em;
   color: var(--td);
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
-.ic-val { font-size: 14px; font-weight: 600; color: var(--t); }
+.ic-val {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--t);
+}
+
 
 /* Owner */
 .owner-card {
@@ -228,13 +235,15 @@
 
 /* ── BOOKING PANEL ── */
 .booking-panel {
-  background: var(--bg3);
-  border: 1px solid rgba(155,77,202,.2);
-  border-radius: 16px;
+  background: rgba(18, 15, 32, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: var(--r);
   padding: 24px;
   position: sticky;
   top: 84px;
   height: fit-content;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .bp-header {

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useReservations } from '../context/ReservationsContext';
 import { useFavorites } from '../context/FavoritesContext';
-
+import { DEMO_CARS } from '../services/demoData';
 import Icon from './Icon';
 import './ProfileScreen.css';
 
@@ -17,13 +17,14 @@ export default function ProfileScreen({ navigate, showToast, cars }) {
   const [resFilter, setResFilter] = useState('all');
   const [editingProfile, setEditingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState({ name: '', email: '', phone: '' });
+  const [confirmModal, setConfirmModal] = useState(null); // { title, message, onConfirm }
   const [notifications, setNotifications] = useState(() => {
     try { return JSON.parse(localStorage.getItem('fd_notifications')) || { email: true, push: true, sms: false }; }
     catch { return { email: true, push: true, sms: false }; }
   });
 
   const publishedCars = JSON.parse(localStorage.getItem('fd_published_cars') || '[]');
-  const allCars = [...(cars || [])];
+  const allCars = [...(cars || []), ...DEMO_CARS];
   const favCars = favorites.map(id => allCars.find(c => c.id === id)).filter(Boolean);
   const uniqueFavCars = favCars.filter((car, idx, arr) => arr.findIndex(c => c.id === car.id) === idx);
   const filteredRes = resFilter === 'all' ? reservations : reservations.filter(r => r.status === resFilter);
@@ -32,7 +33,30 @@ export default function ProfileScreen({ navigate, showToast, cars }) {
 
   const handleProfileSave = () => { updateUser(profileForm); setEditingProfile(false); showToast('Perfil actualitzat correctament'); };
   const handleNotificationToggle = (key) => { const u = { ...notifications, [key]: !notifications[key] }; setNotifications(u); localStorage.setItem('fd_notifications', JSON.stringify(u)); showToast(`Notificacions ${key} ${u[key] ? 'activades' : 'desactivades'}`); };
-  const handleCancelReservation = (id) => { cancelReservation(id); showToast('Reserva cancel·lada'); };
+  const handleCancelReservation = (id) => {
+    setConfirmModal({
+      title: 'Cancel·lar reserva',
+      message: 'Estàs segur que vols cancel·lar aquesta reserva? Aquesta acció no es pot desfer.',
+      confirmLabel: 'Sí, cancel·lar',
+      danger: true,
+      onConfirm: () => { cancelReservation(id); showToast('Reserva cancel·lada'); setConfirmModal(null); },
+    });
+  };
+  const handleRemoveCar = (carId) => {
+    setConfirmModal({
+      title: 'Retirar anunci',
+      message: 'Estàs segur que vols retirar aquest anunci? El cotxe deixarà de ser visible per als usuaris.',
+      confirmLabel: 'Sí, retirar anunci',
+      danger: true,
+      onConfirm: () => {
+        const updated = JSON.parse(localStorage.getItem('fd_published_cars') || '[]').filter(c => c.id !== carId);
+        localStorage.setItem('fd_published_cars', JSON.stringify(updated));
+        showToast('Anunci retirat correctament');
+        setConfirmModal(null);
+        window.location.reload();
+      },
+    });
+  };
   const handleLogout = () => { logout(); navigate('home'); };
 
   if (!user) return null;
@@ -41,6 +65,22 @@ export default function ProfileScreen({ navigate, showToast, cars }) {
 
   return (
     <div className="profile-page fade-in">
+      {/* Confirm Modal */}
+      {confirmModal && (
+        <div className="confirm-overlay" onClick={() => setConfirmModal(null)}>
+          <div className="confirm-modal" onClick={e => e.stopPropagation()}>
+            <div className={`confirm-icon ${confirmModal.danger ? 'danger' : ''}`}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="28" height="28"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4M12 17h.01"/></svg>
+            </div>
+            <h3 className="confirm-title">{confirmModal.title}</h3>
+            <p className="confirm-message">{confirmModal.message}</p>
+            <div className="confirm-actions">
+              <button className="btn-ghost confirm-cancel-btn" onClick={() => setConfirmModal(null)}>Tornar enrere</button>
+              <button className={`confirm-ok-btn ${confirmModal.danger ? 'danger' : ''}`} onClick={confirmModal.onConfirm}>{confirmModal.confirmLabel || 'Confirmar'}</button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="profile-inner">
         <aside className="profile-sidebar">
           <div className="profile-card">
@@ -131,9 +171,12 @@ export default function ProfileScreen({ navigate, showToast, cars }) {
                   <div className="mcc-info">
                     <div className="mcc-name">{c.name}</div>
                     <div className="mcc-meta"><Icon name="pin" size={10} color="var(--td)" /> {c.location} · {c.pricePerHour}€/hora</div>
-                    <div className="mcc-stats"><span><Icon name="fuel" size={10} /> {c.fuel}</span><span><Icon name="transmission" size={10} /> {c.transmission}</span></div>
+                    <div className="mcc-stats"><span><Icon name="fuel" size={10} /> {c.fuel}</span><span><Icon name="transmission" size={10} /> {c.transmission}</span>{c.mileage ? <span><Icon name="gauge" size={10} /> {c.mileage.toLocaleString()} km</span> : null}</div>
                   </div>
-                  <div className="mcc-actions"><span className="mcc-status active"><Icon name="active" size={8} color="#5dcaa5" /> Actiu</span></div>
+                  <div className="mcc-actions">
+                    <span className="mcc-status active"><Icon name="active" size={8} color="#5dcaa5" /> Actiu</span>
+                    <button className="btn-ghost-sm mcc-remove" onClick={() => handleRemoveCar(c.id)}>Retirar</button>
+                  </div>
                 </div>
               ))}
               <div className="add-car-cta" onClick={() => navigate('publish')}>

@@ -100,6 +100,10 @@ export default function AuthModal({ onClose }) {
           </button>
         </form>
 
+        <div className="auth-demo">
+          💡 Compte demo: <strong>joan@example.com</strong> / <strong>password123</strong>
+        </div>
+
         <div className="auth-footer">
           {tab === 'login' ? (
             <>No tens compte? <button onClick={() => switchTab('register')}>Registra't</button></>

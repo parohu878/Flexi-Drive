@@ -128,6 +128,12 @@ const icons = {
   transmission: (
     <><circle cx="6" cy="6" r="3" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="6" r="3" /><path d="M6 9v6M18 9v12M6 6h12" /></>
   ),
+  expand: (
+    <><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></>
+  ),
+  collapse: (
+    <><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7" /></>
+  ),
   qr: (
     <><rect x="2" y="2" width="8" height="8" rx="1" /><rect x="14" y="2" width="8" height="8" rx="1" /><rect x="2" y="14" width="8" height="8" rx="1" /><path d="M14 14h2v2h-2zM20 14h2v2h-2zM14 20h2v2h-2zM20 20h2v2h-2zM17 17h2v2h-2z" /></>
   ),
@@ -136,6 +142,9 @@ const icons = {
   ),
   x: (
     <><path d="M18 6 6 18M6 6l12 12" /></>
+  ),
+  gauge: (
+    <><path d="M12 2a10 10 0 1 0 10 10" /><path d="M12 12 16.5 7.5" /><circle cx="12" cy="12" r="1.5" /></>
   ),
 };
 
