@@ -12,6 +12,7 @@ export default function Navbar({ screen, navigate, user, isAuthenticated, onLogi
     { id: 'search', label: 'Buscar', icon: 'search' },
     { id: 'publish', label: 'Publicar', icon: 'plus' },
     { id: 'profile', label: 'Perfil', icon: 'user' },
+    { id: 'chat', label: 'Xat', icon: 'message' },
   ];
 
   const handleLogout = () => {

@@ -3,6 +3,8 @@ import './HomeScreen.css';
 import CarMiniature from './CarMiniature';
 import Icon from './Icon';
 import { useFavorites } from '../context/FavoritesContext';
+import CustomSelect from './CustomSelect';
+import CustomDatePicker from './CustomDatePicker';
 
 export default function HomeScreen({ navigate, cars, loading }) {
   const [searchLoc, setSearchLoc] = useState('');
@@ -73,28 +75,19 @@ export default function HomeScreen({ navigate, cars, loading }) {
                 value={searchLoc} onChange={e => setSearchLoc(e.target.value)} />
             </div>
             <div className="sw-divider" />
-            <label className="sw-field sw-field-date" htmlFor="sw-date-input">
+            <div className="sw-field sw-field-date">
               <span className="sw-label"><Icon name="calendar" size={12} color="#c47dff" /> Data d'inici</span>
-              <input id="sw-date-input" className="sw-input" type="date"
-                value={searchDate} onChange={e => setSearchDate(e.target.value)} />
-            </label>
+              <CustomDatePicker value={searchDate} onChange={e => setSearchDate(e.target.value)} />
+            </div>
             <div className="sw-divider" />
             <div className="sw-field">
               <label className="sw-label"><Icon name="clock" size={12} color="#c47dff" /> Hores</label>
-              <select className="sw-input sw-select"
-                value={searchHours} onChange={e => setSearchHours(e.target.value)}>
-                <option>1 hora</option><option>2 hores</option>
-                <option>4 hores</option><option>Tot el dia</option>
-              </select>
+              <CustomSelect value={searchHours} onChange={e => setSearchHours(e.target.value)} options={['1 hora', '2 hores', '4 hores', 'Tot el dia']} />
             </div>
             <div className="sw-divider" />
             <div className="sw-field">
               <label className="sw-label"><Icon name="fuel" size={12} color="#c47dff" /> Combustible</label>
-              <select className="sw-input sw-select"
-                value={searchFuel} onChange={e => setSearchFuel(e.target.value)}>
-                <option>Tots</option><option>Gasolina</option>
-                <option>Diésel</option><option>Eléctrico</option><option>Híbrido</option>
-              </select>
+              <CustomSelect value={searchFuel} onChange={e => setSearchFuel(e.target.value)} options={['Tots', 'Gasolina', 'Diésel', 'Eléctrico', 'Híbrido']} />
             </div>
             <button className="sw-btn" onClick={() => navigate('search')}>
               <Icon name="search" size={16} />
@@ -278,8 +271,10 @@ function CarCard({ car, onClick }) {
         <CarMiniature size="small" color={car.color} />
         <div className="cc-overlay" />
         <div className="cc-price">{price}€<span>/h</span></div>
-        <div className="cc-avail">Disponible</div>
-        {rating >= 4.9 && <div className="cc-top"><Icon name="star" size={10} color="#000" /> Top</div>}
+        <div style={{ position: 'absolute', top: 8, left: 8, display: 'flex', gap: 6, zIndex: 2 }}>
+          <div className="cc-avail" style={{ position: 'static', margin: 0 }}>Disponible</div>
+          {rating >= 4.9 && <div className="cc-top" style={{ position: 'static', margin: 0 }}><Icon name="star" size={10} color="#000" /> Top</div>}
+        </div>
         <button
           className={`fav-btn cc-fav ${fav ? 'active' : ''}`}
           onClick={(e) => { e.stopPropagation(); toggleFavorite(car.id); }}

@@ -7,6 +7,7 @@ import Icon from './Icon';
 import { carsService } from '../services/api';
 import { useDebounce } from '../hooks/useDebounce';
 import { useFavorites } from '../context/FavoritesContext';
+import CustomSelect from './CustomSelect';
 import './SearchScreen.css';
 
 delete L.Icon.Default.prototype._getIconUrl;
@@ -41,9 +42,15 @@ const userIcon = L.divIcon({
 const FUEL_OPTS  = ['Tots', 'Gasolina', 'Diésel', 'Eléctrico', 'Híbrido'];
 const TRANS_OPTS = ['Tots', 'Manual', 'Automático'];
 
-function MapUpdater({ center }) {
+function MapUpdater({ center, viewMode, mapExpanded }) {
   const map = useMap();
   useEffect(() => { if (center) map.setView(center, map.getZoom()); }, [center, map]);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 320); // wait for CSS transitions to finish
+    return () => clearTimeout(timer);
+  }, [viewMode, mapExpanded, map]);
   return null;
 }
 
@@ -60,6 +67,7 @@ export default function SearchScreen({ navigate, cars: initialCars, loadCars, lo
   const [loading, setLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [viewMode, setViewMode] = useState('both'); // 'both' | 'map' | 'list'
+  const [mapExpanded, setMapExpanded] = useState(false);
   const debouncedQuery = useDebounce(query, 400);
 
   useEffect(() => {
@@ -141,10 +149,10 @@ export default function SearchScreen({ navigate, cars: initialCars, loadCars, lo
 
       <div className="search-main">
         {viewMode !== 'list' && (
-        <div className={`map-area ${viewMode === 'map' ? 'map-area-full' : ''}`}>
+        <div className={`map-area ${viewMode === 'map' ? 'map-area-full' : ''} ${mapExpanded && viewMode === 'both' ? 'expanded' : ''}`}>
           <MapContainer center={mapCenter} zoom={13} style={{ width: '100%', height: '100%', borderRadius: 'inherit' }} scrollWheelZoom={true}>
-            <TileLayer attribution='' url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
-            <MapUpdater center={mapCenter} />
+            <TileLayer attribution='&copy; Google Maps' url="https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}" />
+            <MapUpdater center={mapCenter} viewMode={viewMode} mapExpanded={mapExpanded} />
             {userPos && <Marker position={userPos} icon={userIcon}><Popup><strong>La teva posició</strong></Popup></Marker>}
             {carsWithCoords.map(car => (
               <Marker key={car.id} position={[car.lat, car.lng]} icon={carIcon(car.color || '#9b4dca', hovered === car.id)}
@@ -164,6 +172,13 @@ export default function SearchScreen({ navigate, cars: initialCars, loadCars, lo
               </Marker>
             ))}
           </MapContainer>
+          
+          {viewMode === 'both' && (
+            <button className="map-expand-btn" onClick={() => setMapExpanded(v => !v)} title={mapExpanded ? "Reduir mapa" : "Ampliar mapa"}>
+              <Icon name={mapExpanded ? 'collapse' : 'expand'} size={14} />
+            </button>
+          )}
+          
           <div className="map-badge">{sorted.length} cotxes disponibles</div>
         </div>
         )}
@@ -171,29 +186,41 @@ export default function SearchScreen({ navigate, cars: initialCars, loadCars, lo
         <div className="results-header">
           <span className="results-count">{loading ? <span style={{ color: 'var(--td)' }}>Cercant...</span> : <><strong>{sorted.length}</strong> cotxe{sorted.length !== 1 ? 's' : ''} trobat{sorted.length !== 1 ? 's' : ''}</>}</span>
           <div className="view-toggle">
-            <button className={`view-btn ${viewMode === 'map' || viewMode === 'both' ? 'active' : ''}`} onClick={() => setViewMode(v => v === 'list' ? 'both' : 'map')} title="Vista mapa">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="14" height="14"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
-              Mapa
-            </button>
             <button className={`view-btn ${viewMode === 'list' ? 'active' : ''}`} onClick={() => setViewMode('list')} title="Vista llista">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="14" height="14"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
               Llista
             </button>
+            <button className={`view-btn ${viewMode === 'both' ? 'active' : ''}`} onClick={() => setViewMode('both')} title="Vista mixta (Ambdós)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="14" height="14"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="12" x2="21" y2="12"/></svg>
+              Ambdós
+            </button>
+            <button className={`view-btn ${viewMode === 'map' ? 'active' : ''}`} onClick={() => setViewMode('map')} title="Vista mapa complet">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="14" height="14"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+              Mapa
+            </button>
           </div>
           <div className="sort-wrap">
             <span className="sort-label">Ordenar per:</span>
-            <select className="sort-select" value={sortBy} onChange={e => setSortBy(e.target.value)}>
-              <option value="dist">Distància</option><option value="price">Preu</option><option value="rating">Valoració</option>
-            </select>
+            <CustomSelect
+              className="sort-select-custom"
+              value={sortBy}
+              onChange={e => setSortBy(e.target.value)}
+              options={[
+                { value: 'dist', label: 'Distància' },
+                { value: 'price', label: 'Preu' },
+                { value: 'rating', label: 'Valoració' }
+              ]}
+            />
           </div>
         </div>
 
-        <div className="results-list">
-          {!loading && sorted.length === 0 && (
-            <div className="empty-state"><div className="empty-icon"><Icon name="search" size={36} color="var(--td)" /></div><p>Cap cotxe coincideix amb els filtres</p><button className="btn-ghost-sm" onClick={resetFilters}>Reiniciar filtres</button></div>
-          )}
-          {loading && <div style={{ textAlign: 'center', padding: 40, color: 'var(--td)' }}><div className="app-loader" style={{ width: 28, height: 28, borderWidth: 2 }} /><div style={{ marginTop: 10 }}>Cercant cotxes...</div></div>}
-          {!loading && sorted.map(car => {
+        {viewMode !== 'map' && (
+          <div className="results-list">
+            {!loading && sorted.length === 0 && (
+              <div className="empty-state"><div className="empty-icon"><Icon name="search" size={36} color="var(--td)" /></div><p>Cap cotxe coincideix amb els filtres</p><button className="btn-ghost-sm" onClick={resetFilters}>Reiniciar filtres</button></div>
+            )}
+            {loading && <div style={{ textAlign: 'center', padding: 40, color: 'var(--td)' }}><div className="app-loader" style={{ width: 28, height: 28, borderWidth: 2 }} /><div style={{ marginTop: 10 }}>Cercant cotxes...</div></div>}
+            {!loading && sorted.map(car => {
             const price = car.pricePerHour || car.price;
             const ownerName = car.owner?.name || car.user || '';
             const dist = car.dist != null ? car.dist : '?';
@@ -226,7 +253,8 @@ export default function SearchScreen({ navigate, cars: initialCars, loadCars, lo
               </div>
             );
           })}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

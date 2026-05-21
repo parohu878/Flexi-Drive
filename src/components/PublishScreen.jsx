@@ -1,8 +1,19 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { carsService } from '../services/api';
 import Icon from './Icon';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import CustomSelect from './CustomSelect';
 import './PublishScreen.css';
+
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+});
 
 const DAYS = ['Dl', 'Dt', 'Dc', 'Dj', 'Dv', 'Ds', 'Dg'];
 const ALL_FEATURES = [
@@ -11,6 +22,12 @@ const ALL_FEATURES = [
   'Apple CarPlay', 'Android Auto', 'Llums LED', 'Sostre solar', 'Mode ECO',
   'Conducció assistida', 'Portó elèctric', 'Keyless Go', 'Radi FM',
 ];
+
+function MapUpdater({ center }) {
+  const map = useMap();
+  useEffect(() => { if (center) map.setView(center, map.getZoom()); }, [center, map]);
+  return null;
+}
 
 export default function PublishScreen({ showToast, navigate, onCarCreated }) {
   const { isAuthenticated } = useAuth();
@@ -23,6 +40,7 @@ export default function PublishScreen({ showToast, navigate, onCarCreated }) {
   const [selectedFeatures, setSelectedFeatures] = useState(['A/C', 'Bluetooth']);
   const fileInputRef = useRef(null);
   const [form, setForm] = useState({ makeModel: '', year: '', mileage: '', seats: '5', fuel: 'Gasolina', transmission: 'Manual', location: '', availableFrom: '08:00', availableTo: '20:00', pricePerHour: '', minHours: '1', description: '' });
+  const [mapPos, setMapPos] = useState([41.3874, 2.1686]);
 
   const set = (key) => (e) => { setForm(f => ({ ...f, [key]: e.target.value })); setErrors(err => ({ ...err, [key]: null })); };
   const toggleDay = (i) => setActiveDays(d => d.includes(i) ? d.filter(x => x !== i) : [...d, i]);
@@ -45,13 +63,71 @@ export default function PublishScreen({ showToast, navigate, onCarCreated }) {
   const handleDrop = (e) => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); };
   const removePhoto = (id) => { setPhotos(prev => prev.filter(p => p.id !== id)); };
 
+  const reverseGeocode = async (lat, lng) => {
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+      const data = await res.json();
+      if (data && data.display_name) {
+        setForm(f => ({ ...f, location: data.display_name.split(',').slice(0, 3).join(',') }));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const LocationMarker = () => {
+    useMapEvents({
+      click(e) {
+        setMapPos([e.latlng.lat, e.latlng.lng]);
+        reverseGeocode(e.latlng.lat, e.latlng.lng);
+        setErrors(err => ({ ...err, location: null }));
+      }
+    });
+    return <Marker position={mapPos} />;
+  };
+
+  const handleUseCurrentLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          setMapPos([lat, lng]);
+          reverseGeocode(lat, lng);
+          setErrors(err => ({ ...err, location: null }));
+        },
+        () => showToast('Permís d\'ubicació denegat', 'error')
+      );
+    } else {
+      showToast('Geolocalització no suportada', 'error');
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateStep3()) return;
     const parts = form.makeModel.trim().split(' ');
     setLoading(true);
     try {
-      await carsService.createCar({ make: parts[0] || '', model: parts.slice(1).join(' ') || parts[0], year: parseInt(form.year), mileage: parseInt(form.mileage) || 0, location: form.location, city: 'Barcelona', lat: 41.3874 + (Math.random() - 0.5) * 0.04, lng: 2.1686 + (Math.random() - 0.5) * 0.06, pricePerHour: parseFloat(form.pricePerHour), seats: parseInt(form.seats), fuel: form.fuel, transmission: form.transmission, minHours: parseInt(form.minHours) || 1, description: form.description, features: selectedFeatures, availableFrom: form.availableFrom, availableTo: form.availableTo });
+      await carsService.createCar({ 
+        make: parts[0] || '', 
+        model: parts.slice(1).join(' ') || parts[0], 
+        year: parseInt(form.year), 
+        mileage: parseInt(form.mileage) || 0, 
+        location: form.location, 
+        city: form.location.split(',')[1]?.trim() || 'Barcelona', 
+        lat: mapPos[0], 
+        lng: mapPos[1], 
+        pricePerHour: parseFloat(form.pricePerHour), 
+        seats: parseInt(form.seats), 
+        fuel: form.fuel, 
+        transmission: form.transmission, 
+        minHours: parseInt(form.minHours) || 1, 
+        description: form.description, 
+        features: selectedFeatures, 
+        availableFrom: form.availableFrom, 
+        availableTo: form.availableTo 
+      });
       showToast('Coche publicat correctament!');
       if (onCarCreated) onCarCreated();
       setTimeout(() => navigate('profile'), 1000);
@@ -104,18 +180,33 @@ export default function PublishScreen({ showToast, navigate, onCarCreated }) {
                 </div>
                 <div className="field-group">
                   <label className="field-label">Places</label>
-                  <select className="field-input" value={form.seats} onChange={set('seats')}>{['2','4','5','7'].map(o => <option key={o}>{o}</option>)}</select>
+                  <CustomSelect value={form.seats} onChange={set('seats')} options={['2','4','5','7']} />
                 </div>
               </div>
               <div className="field-row-2">
-                <div className="field-group"><label className="field-label">Combustible</label><select className="field-input" value={form.fuel} onChange={set('fuel')}>{['Gasolina','Diésel','Eléctrico','Híbrido'].map(o => <option key={o}>{o}</option>)}</select></div>
-                <div className="field-group"><label className="field-label">Canvi</label><select className="field-input" value={form.transmission} onChange={set('transmission')}>{['Manual','Automático'].map(o => <option key={o}>{o}</option>)}</select></div>
+                <div className="field-group"><label className="field-label">Combustible</label><CustomSelect value={form.fuel} onChange={set('fuel')} options={['Gasolina','Diésel','Eléctrico','Híbrido']} /></div>
+                <div className="field-group"><label className="field-label">Canvi</label><CustomSelect value={form.transmission} onChange={set('transmission')} options={['Manual','Automático']} /></div>
               </div>
+              
               <div className="field-group">
-                <label className="field-label"><Icon name="pin" size={11} color="#c47dff" /> Ubicació del cotxe</label>
-                <input className={`field-input ${errors.location ? 'field-error' : ''}`} type="text" placeholder="Carrer, número, ciutat…" value={form.location} onChange={set('location')} />
+                <label className="field-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span><Icon name="pin" size={11} color="#c47dff" /> Ubicació del cotxe</span>
+                  <button type="button" onClick={handleUseCurrentLocation} style={{ background: 'none', border: 'none', color: '#c47dff', cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Icon name="pin" size={12} /> Utilitzar ubicació actual
+                  </button>
+                </label>
+                <input className={`field-input ${errors.location ? 'field-error' : ''}`} type="text" placeholder="Carrer, número, ciutat…" value={form.location} onChange={set('location')} style={{ marginBottom: 12 }} />
+                <div style={{ height: 200, width: '100%', borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <MapContainer center={mapPos} zoom={13} style={{ width: '100%', height: '100%' }}>
+                    <TileLayer attribution='&copy; Google Maps' url="https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}" />
+                    <MapUpdater center={mapPos} />
+                    <LocationMarker />
+                  </MapContainer>
+                </div>
+                <span className="field-hint" style={{ marginTop: 8, display: 'block' }}>Fes clic al mapa per ajustar la ubicació exacta</span>
                 {errors.location && <span className="field-error-msg">{errors.location}</span>}
               </div>
+
               <div className="field-group">
                 <label className="field-label"><Icon name="gear" size={11} color="#c47dff" /> Equipament del vehicle</label>
                 <div className="feature-chips">{ALL_FEATURES.map(f => (<button key={f} type="button" className={`feature-chip ${selectedFeatures.includes(f) ? 'active' : ''}`} onClick={() => toggleFeature(f)}>{selectedFeatures.includes(f) ? <><Icon name="check" size={10} /> </> : ''}{f}</button>))}</div>
@@ -186,8 +277,8 @@ export default function PublishScreen({ showToast, navigate, onCarCreated }) {
             { icon: 'star', t: 'Respon ràpid', d: 'Els propietaris amb resposta <1h reben més valoracions positives.' },
           ].map(tip => (
             <div className="tip-card" key={tip.t}>
-              <div className="tip-icon"><Icon name={tip.icon} size={18} color="#c47dff" /></div>
-              <div><div className="tip-title">{tip.t}</div><div className="tip-desc">{tip.d}</div></div>
+               <div className="tip-icon"><Icon name={tip.icon} size={18} color="#c47dff" /></div>
+               <div><div className="tip-title">{tip.t}</div><div className="tip-desc">{tip.d}</div></div>
             </div>
           ))}
           <div className="earnings-estimate">
@@ -200,3 +291,4 @@ export default function PublishScreen({ showToast, navigate, onCarCreated }) {
     </div>
   );
 }
+
