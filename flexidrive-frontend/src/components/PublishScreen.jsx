@@ -36,17 +36,21 @@ export default function PublishScreen({ showToast, navigate, onCarCreated }) {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [photos, setPhotos] = useState([]);
-  const [dragOver, setDragOver] = useState(false);
+  const [storedCars, setStoredCars] = useState(() => JSON.parse(localStorage.getItem('fd_published_cars') || '[]'));
   const [selectedFeatures, setSelectedFeatures] = useState(['A/C', 'Bluetooth']);
   const fileInputRef = useRef(null);
-  const [form, setForm] = useState({ makeModel: '', year: '', mileage: '', seats: '5', fuel: 'Gasolina', transmission: 'Manual', location: '', availableFrom: '08:00', availableTo: '20:00', pricePerHour: '', minHours: '1', description: '' });
+  const [form, setForm] = useState({ makeModel: '', matricula: '', year: '', mileage: '', seats: '5', fuel: 'Gasolina', transmission: 'Manual', location: '', availableFrom: '08:00', availableTo: '20:00', pricePerHour: '', minHours: '1', description: '' });
   const [mapPos, setMapPos] = useState([41.3874, 2.1686]);
 
   const set = (key) => (e) => { setForm(f => ({ ...f, [key]: e.target.value })); setErrors(err => ({ ...err, [key]: null })); };
   const toggleDay = (i) => setActiveDays(d => d.includes(i) ? d.filter(x => x !== i) : [...d, i]);
   const toggleFeature = (f) => setSelectedFeatures(prev => prev.includes(f) ? prev.filter(x => x !== f) : [...prev, f]);
 
-  const validateStep1 = () => { const errs = {}; if (!form.makeModel.trim()) errs.makeModel = 'Marca i model obligatoris'; if (!form.year || form.year < 1990 || form.year > 2027) errs.year = 'Any vàlid obligatori'; if (!form.location.trim()) errs.location = 'Ubicació obligatòria'; setErrors(errs); return Object.keys(errs).length === 0; };
+  const validateStep1 = () => { const errs = {}; if (!form.makeModel.trim()) errs.makeModel = 'Marca i model obligatoris'; if (!form.matricula.trim()) {
+        errs.matricula = 'Matrícula obligatòria';
+      } else if (!/^\d{4}[A-Z]{3}$/.test(form.matricula.trim())) {
+        errs.matricula = 'Formato matrícula inválido (1234ABC)';
+      } if (!form.year || form.year < 1990 || form.year > 2027) errs.year = 'Any vàlid obligatori'; if (!form.location.trim()) errs.location = 'Ubicació obligatòria'; setErrors(errs); return Object.keys(errs).length === 0; };
   const validateStep3 = () => { const errs = {}; if (!form.pricePerHour || form.pricePerHour <= 0) errs.pricePerHour = 'Preu obligatori'; setErrors(errs); return Object.keys(errs).length === 0; };
   const goStep = (s) => { if (s === 2 && !validateStep1()) return; setStep(s); };
 
@@ -104,14 +108,20 @@ export default function PublishScreen({ showToast, navigate, onCarCreated }) {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validateStep3()) return;
+      // Validate duplicate matricula before submitting
+      const duplicate = storedCars.some(c => c.matricula && c.matricula.trim().toUpperCase() === form.matricula.trim().toUpperCase());
+      if (duplicate) {
+        setErrors(err => ({ ...err, matricula: 'Matrícula ja existent' }));
+        return;
+      }
+      if (!validateStep3()) return;
     const parts = form.makeModel.trim().split(' ');
     setLoading(true);
     try {
-      await carsService.createCar({ 
+      const newCar = await carsService.createCar({ 
         make: parts[0] || '', 
         model: parts.slice(1).join(' ') || parts[0], 
+        matricula: form.matricula, 
         year: parseInt(form.year), 
         mileage: parseInt(form.mileage) || 0, 
         location: form.location, 
@@ -128,6 +138,11 @@ export default function PublishScreen({ showToast, navigate, onCarCreated }) {
         availableFrom: form.availableFrom, 
         availableTo: form.availableTo 
       });
+      // Store in local storage for immediate UI reflect
+      // After successful creation, update storedCars state
+      const updated = [...storedCars, newCar];
+      localStorage.setItem('fd_published_cars', JSON.stringify(updated));
+      setStoredCars(updated);
       showToast('Coche publicat correctament!');
       if (onCarCreated) onCarCreated();
       setTimeout(() => navigate('profile'), 1000);
@@ -165,6 +180,11 @@ export default function PublishScreen({ showToast, navigate, onCarCreated }) {
                   <label className="field-label">Marca i model</label>
                   <input className={`field-input ${errors.makeModel ? 'field-error' : ''}`} type="text" placeholder="Ex: Seat León 2021" value={form.makeModel} onChange={set('makeModel')} />
                   {errors.makeModel && <span className="field-error-msg">{errors.makeModel}</span>}
+                </div>
+                <div className="field-group">
+                  <label className="field-label">Matrícula</label>
+                  <input className={`field-input ${errors.matricula ? 'field-error' : ''}`} type="text" placeholder="Ex: 1234ABC" value={form.matricula} onChange={set('matricula')} />
+                  {errors.matricula && <span className="field-error-msg">{errors.matricula}</span>}
                 </div>
                 <div className="field-group">
                   <label className="field-label">Any</label>

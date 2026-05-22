@@ -302,20 +302,21 @@ export const DEMO_USER = {
   avatar: 'JD',
   phone: '+34 612 345 678',
   city: 'Barcelona',
-  memberSince: '2025',
+  memberSince: '2026-05-21',
   rating: 4.8,
   verified: true,
 };
 
 // ── Demo reservations ──
-export const DEMO_RESERVATIONS = [
-  { id: 'r1', carId: 'c1', car: DEMO_CARS[0], date: '28 Abr 2026', startTime: '10:00', hours: 3, price: 42,  fee: 4,  total: 46,  status: 'active',    createdAt: '2026-04-28T08:00:00Z' },
-  { id: 'r2', carId: 'c2', car: DEMO_CARS[1], date: '20 Abr 2026', startTime: '14:00', hours: 2, price: 56,  fee: 6,  total: 62,  status: 'completed', createdAt: '2026-04-20T12:00:00Z' },
-  { id: 'r3', carId: 'c3', car: DEMO_CARS[2], date: '12 Abr 2026', startTime: '09:00', hours: 4, price: 100, fee: 10, total: 110, status: 'completed', createdAt: '2026-04-12T07:00:00Z' },
-  { id: 'r4', carId: 'c4', car: DEMO_CARS[3], date: '2 Abr 2026',  startTime: '16:00', hours: 5, price: 45,  fee: 5,  total: 50,  status: 'completed', createdAt: '2026-04-02T14:00:00Z' },
-  { id: 'r5', carId: 'c5', car: DEMO_CARS[4], date: '18 Mar 2026', startTime: '11:00', hours: 3, price: 48,  fee: 5,  total: 53,  status: 'cancelled', createdAt: '2026-03-18T09:00:00Z' },
-];
 
+
+export const DEMO_RESERVATIONS = [
+  { id: 'r1', carId: 'c1', car: DEMO_CARS[0], renterId: 'demo-user', date: '28 Abr 2026', startTime: '10:00', hours: 3, price: 42, fee: 4, total: 46, status: 'active', createdAt: '2026-04-28T08:00:00Z' },
+  { id: 'r2', carId: 'c2', car: DEMO_CARS[1], renterId: 'demo-user', date: '20 Abr 2026', startTime: '14:00', hours: 2, price: 56, fee: 6, total: 62, status: 'completed', createdAt: '2026-04-20T12:00:00Z' },
+  { id: 'r3', carId: 'c3', car: DEMO_CARS[2], renterId: 'demo-user', date: '12 Abr 2026', startTime: '09:00', hours: 4, price: 100, fee: 10, total: 110, status: 'completed', createdAt: '2026-04-12T07:00:00Z' },
+  { id: 'r4', carId: 'c4', car: DEMO_CARS[3], renterId: 'demo-user', date: '2 Abr 2026', startTime: '16:00', hours: 5, price: 45, fee: 5, total: 50, status: 'completed', createdAt: '2026-04-02T14:00:00Z' },
+  { id: 'r5', carId: 'c5', car: DEMO_CARS[4], renterId: 'demo-user', date: '18 Mar 2026', startTime: '11:00', hours: 3, price: 48, fee: 5, total: 53, status: 'cancelled', createdAt: '2026-03-18T09:00:00Z' },
+];
 // ── Helper functions ──
 export function filterCars(cars, { query, maxPrice, fuel, transmission, sortBy, userLat, userLng } = {}) {
   let filtered = [...cars];

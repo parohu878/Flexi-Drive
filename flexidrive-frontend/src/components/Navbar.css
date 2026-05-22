@@ -45,6 +45,15 @@
   transition: all .3s ease;
 }
 
+.logo-img {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  flex-shrink: 0;
+  display: block;
+}
+
+
 .navbar-logo:hover .logo-orb {
   transform: scale(1.05) rotate(5deg);
   box-shadow: 0 0 25px rgba(224,64,251,.6);

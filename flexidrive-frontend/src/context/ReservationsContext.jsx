@@ -19,6 +19,7 @@ export function ReservationsProvider({ children }) {
   const addReservation = useCallback((reservation) => {
     const newRes = {
       ...reservation,
+      renterId: user?.id,
       id: 'r' + Date.now(),
       status: 'active',
       createdAt: new Date().toISOString(),

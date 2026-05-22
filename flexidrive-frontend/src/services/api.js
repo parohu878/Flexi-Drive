@@ -35,34 +35,35 @@ const transMapToFrontend = {
   'automatico': 'Automático'
 };
 
-const mapVehicleToCar = (v) => ({
-  id: v.id,
-  name: `${v.marca} ${v.modelo}`,
-  make: v.marca,
-  model: v.modelo,
-  year: 2024,
-  location: v.direccion || 'Ubicación no especificada',
-  city: v.direccion || 'Desconocido',
-  lat: v.latitud || 41.3879,
-  lng: v.longitud || 2.1699,
-  pricePerHour: v.precio_dia, // Mostramos precio por día como precio general
-  seats: v.plazas,
-  fuel: fuelMapToFrontend[v.combustible] || v.combustible,
-  transmission: transMapToFrontend[v.transmision] || v.transmision,
-  color: ['#9b4dca', '#e040fb', '#4db8ff', '#5dcaa5', '#ff8c42', '#c47dff'][Math.floor(Math.random() * 6)],
-  rating: 5.0,
-  totalReviews: 0,
-  features: [],
-  description: v.descripcion,
-  owner: v.users ? {
-    name: v.users.nombre,
-    avatar: v.users.foto_perfil || (v.users.nombre ? v.users.nombre.substring(0, 2).toUpperCase() : 'FD'),
-    rating: 5
-  } : null,
-  availableFrom: '00:00',
-  availableTo: '23:59',
-  dist: v.radio_km || 0
-});
+  const mapVehicleToCar = (v) => ({
+    id: v.id,
+    name: `${v.marca} ${v.modelo}`,
+    make: v.marca,
+    model: v.modelo,
+    year: 2024,
+    location: v.direccion || 'Ubicación no especificada',
+    city: v.direccion || 'Desconocido',
+    lat: v.latitud || 41.3879,
+    lng: v.longitud || 2.1699,
+    pricePerHour: v.precio_dia, // Mostramos precio por día como precio general
+    seats: v.plazas,
+    fuel: fuelMapToFrontend[v.combustible] || v.combustible,
+    transmission: transMapToFrontend[v.transmision] || v.transmision,
+    color: ['#9b4dca', '#e040fb', '#4db8ff', '#5dcaa5', '#ff8c42', '#c47dff'][Math.floor(Math.random() * 6)],
+    rating: 5.0,
+    totalReviews: 0,
+    features: [],
+    description: v.descripcion,
+    owner: v.users ? {
+      id: v.users.id,
+      name: v.users.nombre,
+      avatar: v.users.foto_perfil || (v.users.nombre ? v.users.nombre.substring(0, 2).toUpperCase() : 'FD'),
+      rating: 5
+    } : null,
+    availableFrom: '00:00',
+    availableTo: '23:59',
+    dist: v.radio_km || 0
+  });
 
 // ── Auth ───────────────────────────────────────────────────────────
 export const authService = {
@@ -128,6 +129,7 @@ export const carsService = {
   },
 
   createCar: async (data) => {
+    // Map frontend fuel and transmission values to DB format
     const fuelMapToDb = {
       'Gasolina': 'gasolina',
       'Diésel': 'diesel',
@@ -135,29 +137,17 @@ export const carsService = {
       'Híbrido': 'hibrido',
       'GLP': 'glp'
     };
-
-    const transMapToDb = {
+    const transmissionMapToDb = {
       'Manual': 'manual',
       'Automático': 'automatico'
     };
-
     const payload = {
-      marca: data.make,
-      modelo: data.model,
-      matricula: '0000XXX', // Default ya que frontend no lo pide
-      tipo: 'turismo',
-      combustible: fuelMapToDb[data.fuel] || data.fuel?.toLowerCase() || 'gasolina',
-      plazas: data.seats || 5,
-      transmision: transMapToDb[data.transmission] || data.transmission?.toLowerCase() || 'manual',
-      descripcion: data.description || '',
-      precio_dia: data.pricePerHour, // Frontend price is used as day price
-      latitud: 41.38,
-      longitud: 2.15,
-      direccion: 'Barcelona',
-      radio_km: 10
+      ...data,
+      fuel: fuelMapToDb[data.fuel] || data.fuel,
+      transmission: transmissionMapToDb[data.transmission] || data.transmission
     };
     const res = await request('/vehicles', { method: 'POST', body: JSON.stringify(payload) });
-    return mapVehicleToCar(res.vehicle);
+    return mapVehicleToCar(res);
   },
 
   updateCar: (id, data) => Promise.reject(new Error('No implementado en backend')),
@@ -210,15 +200,15 @@ export const reservationsService = {
         precio_max_dia: 99999
       })
     });
-
+    
     // 2. Buscar si el coche hizo match
     const matches = await request(`/requests/${reqRes.request.id}/matches`);
     const match = matches.find(m => m.vehicle_id === carId || m.vehicle_id.toString() === carId.toString());
-
+    
     if (!match) {
       throw new Error('El vehículo no está disponible para estas fechas según el backend.');
     }
-
+    
     // 3. Crear Booking a partir del match
     const bookingRes = await request('/bookings', {
       method: 'POST',
@@ -229,7 +219,7 @@ export const reservationsService = {
         precio_total: match.precio * (hours/24) || match.precio
       })
     });
-
+    
     return bookingRes.booking;
   },
 

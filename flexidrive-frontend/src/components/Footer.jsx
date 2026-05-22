@@ -34,10 +34,7 @@ export default function Footer({ navigate, screen }) {
           {/* Brand */}
           <div className="df-brand-col">
             <div className="df-brand">
-              <div className="df-logo">
-                <span className="df-logo-text">FD</span>
-                <div className="df-logo-ring" />
-              </div>
+              <div className="df-logo"><img src="/logo.png" alt="FlexiDrive" className="df-logo-img" /></div>
               <div>
                 <div className="df-name">FLEXI<span className="df-name-accent">DRIVE</span></div>
                 <div className="df-tagline">La plataforma P2P de cotxes · Barcelona</div>

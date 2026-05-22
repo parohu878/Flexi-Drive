@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from './context/AuthContext';
 import { carsService } from './services/api';
-import { DEMO_CARS } from './services/demoData';
+// 
+// Fallback to empty list if API fails
+// setCars([]);
 
 import Navbar from './components/Navbar';
 import HomeScreen from './components/HomeScreen';
@@ -40,8 +42,8 @@ export default function App() {
       setCars([...apiCars, ...published.filter(pc => !apiCars.find(ac => ac.id === pc.id))]);
     } catch (err) {
       console.error('Error loading cars:', err);
-      // Ultimate fallback
-      setCars(DEMO_CARS);
+      // Fallback: set empty list if API fails
+      setCars([]);
     } finally {
       setCarsLoading(false);
     }

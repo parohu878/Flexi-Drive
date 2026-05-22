@@ -25,7 +25,7 @@ export default function Navbar({ screen, navigate, user, isAuthenticated, onLogi
       <div className="navbar-inner">
         {/* Logo */}
         <div className="navbar-logo" onClick={() => navigate('home')}>
-          <div className="logo-orb">FD</div>
+          <img src="/logo.png" alt="FlexiDrive" className="logo-img" />
           <span className="logo-text">FLEXI<span className="logo-accent">DRIVE</span></span>
         </div>
 

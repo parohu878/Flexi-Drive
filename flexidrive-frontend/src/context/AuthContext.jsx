@@ -62,6 +62,7 @@ export function AuthProvider({ children }) {
           email,
           name: email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
           avatar: email.substring(0, 2).toUpperCase(),
+          memberSince: new Date().toLocaleDateString('es-ES')
         };
         const demoToken = 'demo-token-' + Date.now();
         localStorage.setItem('fd_token', demoToken);

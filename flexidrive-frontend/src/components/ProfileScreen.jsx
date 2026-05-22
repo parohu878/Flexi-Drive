@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { carsService } from '../services/api';
 import { useReservations } from '../context/ReservationsContext';
 import { useFavorites } from '../context/FavoritesContext';
-import { DEMO_CARS } from '../services/demoData';
+// import { DEMO_CARS } from '../services/demoData';
 import Icon from './Icon';
 import './ProfileScreen.css';
 
@@ -23,11 +24,28 @@ export default function ProfileScreen({ navigate, showToast, cars }) {
     catch { return { email: true, push: true, sms: false }; }
   });
 
-  const publishedCars = JSON.parse(localStorage.getItem('fd_published_cars') || '[]');
-  const allCars = [...(cars || []), ...DEMO_CARS];
+
+  const [publishedCars, setPublishedCars] = useState([]);
+  const allCars = cars || [];
+  useEffect(() => {
+    const stored = JSON.parse(localStorage.getItem('fd_published_cars') || '[]');
+    // Keep only cars that still exist in backend (allCars) to avoid fake entries
+    const valid = stored.filter(p => allCars.some(c => c.id === p.id));
+    setPublishedCars(valid);
+  }, [allCars]);
+
+  // myCars combines valid published cars and backend‑owned cars (unique)
+  const ownedFromBackend = allCars.filter(c => c.owner?.id === user.id);
+  const myCars = [...new Map([...publishedCars, ...ownedFromBackend].map(c => [c.id, c])).values()];
+
   const favCars = favorites.map(id => allCars.find(c => c.id === id)).filter(Boolean);
   const uniqueFavCars = favCars.filter((car, idx, arr) => arr.findIndex(c => c.id === car.id) === idx);
   const filteredRes = resFilter === 'all' ? reservations : reservations.filter(r => r.status === resFilter);
+  // Show only reservations made by the logged-in user
+  const userId = user?.id;
+  const validReservations = filteredRes.filter(r => r.renterId === userId);
+
+// Removed unused effect that attempted to load user-owned cars (setUserCars undefined)
 
   useEffect(() => { if (user) setProfileForm({ name: user.name || '', email: user.email || '', phone: user.phone || '' }); }, [user]);
 
@@ -43,20 +61,26 @@ export default function ProfileScreen({ navigate, showToast, cars }) {
     });
   };
   const handleRemoveCar = (carId) => {
-    setConfirmModal({
-      title: 'Retirar anunci',
-      message: 'Estàs segur que vols retirar aquest anunci? El cotxe deixarà de ser visible per als usuaris.',
-      confirmLabel: 'Sí, retirar anunci',
-      danger: true,
-      onConfirm: () => {
-        const updated = JSON.parse(localStorage.getItem('fd_published_cars') || '[]').filter(c => c.id !== carId);
-        localStorage.setItem('fd_published_cars', JSON.stringify(updated));
-        showToast('Anunci retirat correctament');
-        setConfirmModal(null);
-        window.location.reload();
-      },
-    });
-  };
+  setConfirmModal({
+    title: 'Retirar anunci',
+    message: 'Estàs segur que vols retirar aquest anunci? El cotxe deixarà de ser visible per als usuaris.',
+    confirmLabel: 'Sí, retirar anunci',
+    danger: true,
+    onConfirm: async () => {
+      try {
+        await carsService.deleteCar(carId);
+      } catch (e) {
+        console.error('Error deleting car from backend', e);
+        // proceed anyway
+      }
+      const updated = JSON.parse(localStorage.getItem('fd_published_cars') || '[]').filter(c => c.id !== carId);
+      localStorage.setItem('fd_published_cars', JSON.stringify(updated));
+      setPublishedCars(updated);
+      setConfirmModal(null);
+      // No page reload; UI will update via state changes
+    },
+  });
+};;
   const handleLogout = () => { logout(); navigate('home'); };
 
   if (!user) return null;
@@ -92,9 +116,15 @@ export default function ProfileScreen({ navigate, showToast, cars }) {
               <div className="pstat-sep" />
               <div className="pstat"><span className="pstat-n">{user.rating || '4.8'}<Icon name="star" size={10} color="#f5c518" /></span><span className="pstat-l">Valoració</span></div>
               <div className="pstat-sep" />
-              <div className="pstat"><span className="pstat-n">{publishedCars.length}</span><span className="pstat-l">Cotxes</span></div>
+              <div className="pstat">
+                <span className="pstat-n">{myCars.length}</span>
+                <span className="pstat-l">Cotxes</span>
+              </div>
             </div>
-            <div className="profile-badge"><Icon name="check" size={12} color="#5dcaa5" /> {user.verified ? 'Verificat' : 'Membre'} · Membre des de {user.memberSince || '2025'}</div>
+            <div className="profile-badge">
+              <Icon name="check" size={12} color="#5dcaa5" />
+              {user.verified ? 'Verificat' : 'Membre'} · Membre des de {user.memberSince ?? new Date().toLocaleDateString('es-ES')}
+            </div>
           </div>
           <nav className="profile-nav">
             {TABS.map((label, i) => (
@@ -129,10 +159,10 @@ export default function ProfileScreen({ navigate, showToast, cars }) {
                 ].map(f => (<button key={f.key} className={`res-filter-btn ${resFilter === f.key ? 'active' : ''}`} onClick={() => setResFilter(f.key)}>{f.label} ({f.count})</button>))}
               </div>
               <div className="reservations-list">
-                {filteredRes.length === 0 && (
+                {validReservations.length === 0 && (
                   <div className="empty-res"><Icon name="clipboard" size={36} color="var(--td)" style={{marginBottom:12}} /><p>Cap reserva {resFilter !== 'all' ? `amb estat "${resFilter}"` : 'encara'}</p><button className="btn-ghost-sm" onClick={() => navigate('search')}>Buscar cotxes</button></div>
                 )}
-                {filteredRes.map(r => (
+                {validReservations.map(r => (
                   <div className="reservation-card" key={r.id}>
                     <div className="rc-car-icon"><Icon name="car" size={22} color="#c47dff" /></div>
                     <div className="rc-info">
@@ -162,10 +192,14 @@ export default function ProfileScreen({ navigate, showToast, cars }) {
                 <h2 className="profile-section-title">Els meus cotxes</h2>
                 <button className="btn-primary" onClick={() => navigate('publish')}><Icon name="plus" size={13} /> Publicar cotxe</button>
               </div>
-              {publishedCars.length === 0 && (
-                <div className="empty-res"><Icon name="car" size={36} color="var(--td)" style={{marginBottom:12}} /><p>Encara no has publicat cap cotxe</p><button className="btn-primary" onClick={() => navigate('publish')}>Publicar el primer</button></div>
+              {myCars.length === 0 && (
+                <div className="empty-res">
+                  <Icon name="car" size={36} color="var(--td)" style={{marginBottom:12}} />
+                  <p>Encara no has publicat cap cotxe</p>
+                  <button className="btn-primary" onClick={() => navigate('publish')}>Publicar el primer</button>
+                </div>
               )}
-              {publishedCars.map(c => (
+              {myCars.map(c => (
                 <div className="my-car-card expanded" key={c.id}>
                   <div className="mcc-icon"><Icon name="car" size={22} color="#c47dff" /></div>
                   <div className="mcc-info">

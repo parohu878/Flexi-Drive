@@ -81,17 +81,27 @@
 }
 
 .df-logo {
-  width: 48px;
-  height: 48px;
-  background: linear-gradient(135deg, #9b4dca, #e040fb);
+  width: 80px;
+  height: 80px;
+  background: none;
   border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 0 24px rgba(155,77,202,.5);
+  box-shadow: none;
   position: relative;
 }
+
+.df-logo-img {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  flex-shrink: 0;
+  display: block;
+}
+
+
 .df-logo-text {
   font-family: 'Orbitron', sans-serif;
   font-size: 12px;
