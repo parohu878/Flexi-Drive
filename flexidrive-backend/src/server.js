@@ -27,7 +27,7 @@ app.use('/api/auth', authRoutes); // Todas las rutas de auth empezarán por /api
 app.use('/api/users', userRoutes);
 app.use('/api/vehicles', vehicleRoutes);
 app.use('/api/availability', availabilityRoutes);
-app.use('api/requests', requestRoutes);
+app.use('/api/requests', requestRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.get('/api/notifications', authMiddleware, notificationController.getNotifications);
 app.use('/api/reviews', reviewRoutes);

@@ -147,7 +147,7 @@ export const carsService = {
       transmission: transmissionMapToDb[data.transmission] || data.transmission
     };
     const res = await request('/vehicles', { method: 'POST', body: JSON.stringify(payload) });
-    return mapVehicleToCar(res);
+    return mapVehicleToCar(res.vehicle);
   },
 
   updateCar: (id, data) => Promise.reject(new Error('No implementado en backend')),

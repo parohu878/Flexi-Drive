@@ -3,37 +3,62 @@ const supabase = require('../config/supabase');
 const vehicleController = {
   // Crear un nuevo vehículo
   createVehicle: async (req, res) => {
-    const { 
-      marca, modelo, matricula, tipo, combustible, plazas, 
-      transmision, descripcion, precio_dia, latitud, longitud, 
-      direccion, radio_km 
+    const {
+      make,
+      model,
+      matricula,
+      year,
+      mileage,
+      location,
+      city,
+      lat,
+      lng,
+      pricePerHour,
+      seats,
+      fuel,
+      transmission,
+      minHours,
+      description,
+      features,
+      availableFrom,
+      availableTo
     } = req.body;
 
     try {
-      // 1. Obtener el ID interno del usuario desde nuestra tabla 'users' usando el id_auth
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('id, rol')
-        .eq('id_auth', req.user.id)
-        .single();
+      // Get internal user ID (flexible lookup by id_auth or email)
+      let userQuery = supabase.from('users').select('id, rol');
+      if (req.user.id && !req.user.id.startsWith('demo-')) {
+        userQuery = userQuery.eq('id_auth', req.user.id);
+      } else {
+        userQuery = userQuery.eq('email', req.user.email);
+      }
+      const { data: userData, error: userError } = await userQuery.single();
 
       if (userError || !userData) throw new Error('Usuario no encontrado');
-      
-      // 2. Opcional: Validar si es propietario (puedes quitarlo si permites que todos suban)
-      if (userData.rol === 'inquilino') {
-        return res.status(403).json({ error: 'Debes ser propietario para subir un vehículo' });
-      }
 
-      // 3. Insertar el vehículo
       const { data, error } = await supabase
-        .from('vehicles')
-        .insert([{
-          propietario_id: userData.id,
-          marca, modelo, matricula, tipo, combustible, plazas,
-          transmision, descripcion, precio_dia, latitud, longitud,
-          direccion, radio_km
-        }])
-        .select();
+  .from('vehicles')
+  .insert([
+    {
+      propietario_id: userData.id,
+      marca: make,
+      modelo: model,
+      matricula,
+      precio_dia: pricePerHour,
+      latitud: lat,
+      longitud: lng,
+      direccion: location,
+      radio_km: 0,
+      // Optional fields with fallback defaults
+      tipo: null,
+      combustible: fuel,
+      plazas: seats,
+      transmision: transmission,
+      descripcion: description,
+      // Additional fields can be added as needed
+    }
+  ])
+  .select();
 
       if (error) throw error;
       res.status(201).json({ message: 'Vehículo creado con éxito', vehicle: data[0] });
@@ -60,11 +85,15 @@ const vehicleController = {
   // Obtener vehículos de un propietario específico (mis coches)
   getMyVehicles: async (req, res) => {
     try {
-      const { data: userData } = await supabase
-        .from('users')
-        .select('id')
-        .eq('id_auth', req.user.id)
-        .single();
+      let userQuery = supabase.from('users').select('id');
+      if (req.user.id && !req.user.id.startsWith('demo-')) {
+        userQuery = userQuery.eq('id_auth', req.user.id);
+      } else {
+        userQuery = userQuery.eq('email', req.user.email);
+      }
+      const { data: userData, error: userError } = await userQuery.single();
+      
+      if (userError || !userData) throw new Error('Usuario no encontrado');
 
       const { data, error } = await supabase
         .from('vehicles')

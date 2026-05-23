@@ -30,12 +30,13 @@ function MapUpdater({ center }) {
 }
 
 export default function PublishScreen({ showToast, navigate, onCarCreated }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [activeDays, setActiveDays] = useState([0,1,2,3,4]);
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [photos, setPhotos] = useState([]);
+const [dragOver, setDragOver] = useState(false);
   const [storedCars, setStoredCars] = useState(() => JSON.parse(localStorage.getItem('fd_published_cars') || '[]'));
   const [selectedFeatures, setSelectedFeatures] = useState(['A/C', 'Bluetooth']);
   const fileInputRef = useRef(null);
@@ -138,9 +139,9 @@ export default function PublishScreen({ showToast, navigate, onCarCreated }) {
         availableFrom: form.availableFrom, 
         availableTo: form.availableTo 
       });
-      // Store in local storage for immediate UI reflect
-      // After successful creation, update storedCars state
-      const updated = [...storedCars, newCar];
+      const owner = { id: user.id, name: user.name || user.email.split('@')[0] };
+      const newCarWithOwner = { ...newCar, owner };
+      const updated = [...storedCars, newCarWithOwner];
       localStorage.setItem('fd_published_cars', JSON.stringify(updated));
       setStoredCars(updated);
       showToast('Coche publicat correctament!');

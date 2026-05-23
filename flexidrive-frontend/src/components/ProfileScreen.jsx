@@ -18,6 +18,22 @@ export default function ProfileScreen({ navigate, showToast, cars }) {
   const [resFilter, setResFilter] = useState('all');
   const [editingProfile, setEditingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState({ name: '', email: '', phone: '' });
+  const [publishedCars, setPublishedCars] = useState([]);
+  const allCars = cars || [];
+  const [ownedBackendCars, setOwnedBackendCars] = useState([]);
+  // Fetch cars owned by the logged‑in user from backend
+  useEffect(() => {
+    if (!user) return;
+    const loadOwned = async () => {
+      try {
+        const cars = await carsService.getCarsByOwner(user.id);
+        setOwnedBackendCars(cars);
+      } catch (e) {
+        console.error('Error loading owned cars', e);
+      }
+    };
+    loadOwned();
+  }, [user]);
   const [confirmModal, setConfirmModal] = useState(null); // { title, message, onConfirm }
   const [notifications, setNotifications] = useState(() => {
     try { return JSON.parse(localStorage.getItem('fd_notifications')) || { email: true, push: true, sms: false }; }
@@ -25,18 +41,16 @@ export default function ProfileScreen({ navigate, showToast, cars }) {
   });
 
 
-  const [publishedCars, setPublishedCars] = useState([]);
-  const allCars = cars || [];
+
+
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem('fd_published_cars') || '[]');
-    // Keep only cars that still exist in backend (allCars) to avoid fake entries
-    const valid = stored.filter(p => allCars.some(c => c.id === p.id));
-    setPublishedCars(valid);
-  }, [allCars]);
+    setPublishedCars(stored);
+  }, []);
 
   // myCars combines valid published cars and backend‑owned cars (unique)
-  const ownedFromBackend = allCars.filter(c => c.owner?.id === user.id);
-  const myCars = [...new Map([...publishedCars, ...ownedFromBackend].map(c => [c.id, c])).values()];
+  const ownedFromBackend = user ? ownedBackendCars : [];
+  const myCars = [...new Map([...publishedCars.filter(c => c.owner?.id === user?.id), ...ownedFromBackend].map(c => [c.id, c])).values()];
 
   const favCars = favorites.map(id => allCars.find(c => c.id === id)).filter(Boolean);
   const uniqueFavCars = favCars.filter((car, idx, arr) => arr.findIndex(c => c.id === car.id) === idx);
@@ -80,7 +94,7 @@ export default function ProfileScreen({ navigate, showToast, cars }) {
       // No page reload; UI will update via state changes
     },
   });
-};;
+};
   const handleLogout = () => { logout(); navigate('home'); };
 
   if (!user) return null;

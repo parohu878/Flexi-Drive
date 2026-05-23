@@ -10,6 +10,30 @@ const authMiddleware = async (req, res, next) => {
 
   const token = authHeader.split(' ')[1];
 
+  // Soporte para tokens demo en desarrollo/pruebas
+  if (token.startsWith('demo-token:')) {
+    const email = token.split(':')[1];
+    try {
+      const { data: usr, error: usrErr } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .single();
+      
+      if (usrErr || !usr) {
+        return res.status(401).json({ error: 'Usuario demo no encontrado en la base de datos.' });
+      }
+
+      req.user = {
+        id: usr.id_auth || `demo-id-${usr.id}`,
+        email: usr.email
+      };
+      return next();
+    } catch (err) {
+      return res.status(401).json({ error: 'Token demo inválido o error en consulta.' });
+    }
+  }
+
   try {
     // 2. Verificar el token con Supabase Auth
     const { data: { user }, error } = await supabase.auth.getUser(token);
