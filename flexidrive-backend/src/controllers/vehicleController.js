@@ -97,7 +97,7 @@ const vehicleController = {
 
       const { data, error } = await supabase
         .from('vehicles')
-        .select('*')
+        .select('*, users(nombre, foto_perfil)')
         .eq('propietario_id', userData.id);
 
       if (error) throw error;
