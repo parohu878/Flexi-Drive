@@ -72,7 +72,6 @@ const authController = {
             return res.json({ message: 'Login exitoso (demo)', session: demoSession });
           }
           throw error;
-        }
 
       res.json({ message: 'Login exitoso', session: data.session });
     } catch (error) {
