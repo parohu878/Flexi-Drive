@@ -1,16 +1,13 @@
-<<<<<<< HEAD
-node_modules/
-build/
-.env
-.DS_Store
-=======
 # Ignorar carpetas de dependencias
+node_modules/
 **/node_modules/
 
 # Ignorar archivos de configuración sensible
+.env
 **/.env
 
-# Archivos de sistema
+# Archivos de build y sistema
+build/
 .DS_Store
 Thumbs.db
->>>>>>> 0366ffd4d37b0cdb10e69c4d5af90204bd689a4f
+
