@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { authService } from '../services/api';
-import { DEMO_USER } from '../services/demoData';
 
 const AuthContext = createContext(null);
 
@@ -17,26 +16,15 @@ export function AuthProvider({ children }) {
       authService.getMe()
         .then(u => setUser(u))
         .catch(() => {
-          // If API is unreachable but we have a demo token, use demo user
-          const storedUser = localStorage.getItem('fd_user');
-          if (storedUser) {
-            try {
-              setUser(JSON.parse(storedUser));
-            } catch {
-              localStorage.removeItem('fd_token');
-              localStorage.removeItem('fd_user');
-              setToken(null);
-            }
-          } else {
-            localStorage.removeItem('fd_token');
-            setToken(null);
-          }
+          localStorage.removeItem('fd_token');
+          setToken(null);
+          setUser(null);
         })
         .finally(() => setLoading(false));
     } else {
       setLoading(false);
     }
-  }, []);
+  }, [token]);
 
   const login = useCallback(async (email, password) => {
     try {
@@ -46,31 +34,6 @@ export function AuthProvider({ children }) {
       setUser(data.user);
       return data.user;
     } catch (err) {
-      // Fallback: demo login when backend is not available
-      if (email === 'joan@example.com' && password === 'password123') {
-        const demoToken = 'demo-token-' + Date.now();
-        localStorage.setItem('fd_token', demoToken);
-        localStorage.setItem('fd_user', JSON.stringify(DEMO_USER));
-        setToken(demoToken);
-        setUser(DEMO_USER);
-        return DEMO_USER;
-      }
-      // If it's a network error (backend down), try demo login for any credentials
-      if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
-        const demoUser = {
-          ...DEMO_USER,
-          email,
-          name: email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-          avatar: email.substring(0, 2).toUpperCase(),
-          memberSince: new Date().toLocaleDateString('es-ES')
-        };
-        const demoToken = 'demo-token-' + Date.now();
-        localStorage.setItem('fd_token', demoToken);
-        localStorage.setItem('fd_user', JSON.stringify(demoUser));
-        setToken(demoToken);
-        setUser(demoUser);
-        return demoUser;
-      }
       throw err;
     }
   }, []);
@@ -83,29 +46,12 @@ export function AuthProvider({ children }) {
       setUser(data.user);
       return data.user;
     } catch (err) {
-      // Fallback: demo register when backend is not available
-      if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
-        const demoUser = {
-          ...DEMO_USER,
-          id: 'user-' + Date.now(),
-          name,
-          email,
-          avatar: name.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2),
-        };
-        const demoToken = 'demo-token-' + Date.now();
-        localStorage.setItem('fd_token', demoToken);
-        localStorage.setItem('fd_user', JSON.stringify(demoUser));
-        setToken(demoToken);
-        setUser(demoUser);
-        return demoUser;
-      }
       throw err;
     }
   }, []);
 
   const logout = useCallback(() => {
     localStorage.removeItem('fd_token');
-    localStorage.removeItem('fd_user');
     setToken(null);
     setUser(null);
   }, []);
@@ -114,20 +60,16 @@ export function AuthProvider({ children }) {
     try {
       const u = await authService.getMe();
       setUser(u);
-    } catch {
-      // Keep current user if API fails
-      const storedUser = localStorage.getItem('fd_user');
-      if (storedUser) {
-        try { setUser(JSON.parse(storedUser)); } catch { logout(); }
-      }
+    } catch (e) {
+      console.error('Error refreshing user:', e);
+      logout();
     }
   }, [logout]);
 
   const updateUser = useCallback((updates) => {
     setUser(prev => {
-      const updated = { ...prev, ...updates };
-      localStorage.setItem('fd_user', JSON.stringify(updated));
-      return updated;
+      if (!prev) return null;
+      return { ...prev, ...updates };
     });
   }, []);
 
@@ -143,3 +85,4 @@ export function useAuth() {
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');
   return ctx;
 }
+

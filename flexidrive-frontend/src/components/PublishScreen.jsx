@@ -37,7 +37,6 @@ export default function PublishScreen({ showToast, navigate, onCarCreated }) {
   const [errors, setErrors] = useState({});
   const [photos, setPhotos] = useState([]);
 const [dragOver, setDragOver] = useState(false);
-  const [storedCars, setStoredCars] = useState(() => JSON.parse(localStorage.getItem('fd_published_cars') || '[]'));
   const [selectedFeatures, setSelectedFeatures] = useState(['A/C', 'Bluetooth']);
   const fileInputRef = useRef(null);
   const [form, setForm] = useState({ makeModel: '', matricula: '', year: '', mileage: '', seats: '5', fuel: 'Gasolina', transmission: 'Manual', location: '', availableFrom: '08:00', availableTo: '20:00', pricePerHour: '', minHours: '1', description: '' });
@@ -109,13 +108,8 @@ const [dragOver, setDragOver] = useState(false);
   };
 
   const handleSubmit = async (e) => {
-      // Validate duplicate matricula before submitting
-      const duplicate = storedCars.some(c => c.matricula && c.matricula.trim().toUpperCase() === form.matricula.trim().toUpperCase());
-      if (duplicate) {
-        setErrors(err => ({ ...err, matricula: 'Matrícula ja existent' }));
-        return;
-      }
-      if (!validateStep3()) return;
+    if (e) e.preventDefault();
+    if (!validateStep3()) return;
     const parts = form.makeModel.trim().split(' ');
     setLoading(true);
     try {
@@ -139,16 +133,25 @@ const [dragOver, setDragOver] = useState(false);
         availableFrom: form.availableFrom, 
         availableTo: form.availableTo 
       });
-      const owner = { id: user.id, name: user.name || user.email.split('@')[0] };
-      const newCarWithOwner = { ...newCar, owner };
-      const updated = [...storedCars, newCarWithOwner];
-      localStorage.setItem('fd_published_cars', JSON.stringify(updated));
-      setStoredCars(updated);
-      showToast('Coche publicat correctament!');
+
+      // Subir fotos al backend/Supabase Storage
+      if (photos.length > 0) {
+        for (let i = 0; i < photos.length; i++) {
+          const photo = photos[i];
+          const resBlob = await fetch(photo.url);
+          const blob = await resBlob.blob();
+          await carsService.uploadPhoto(newCar.id, blob, photo.name || `photo_${i}.jpg`, i === 0);
+        }
+      }
+
+      showToast('Cotxe publicat correctament!');
       if (onCarCreated) onCarCreated();
       setTimeout(() => navigate('profile'), 1000);
-    } catch (err) { showToast(`${err.message || 'Error al publicar'}`, 'error'); }
-    finally { setLoading(false); }
+    } catch (err) { 
+      showToast(`${err.message || 'Error al publicar'}`, 'error'); 
+    } finally {
+      setLoading(false);
+    }
   };
 
   const estimatedPrice = parseFloat(form.pricePerHour) || 15;

@@ -2,38 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import Icon from './Icon';
 import './ChatScreen.css';
 
-// Helper to load/save chats from localStorage with pre-populated demo conversations
+// Helper to load chats from localStorage (no demo pre‑population)
 const loadChats = () => {
   try {
     const existing = localStorage.getItem('fd_chats');
     if (existing) return JSON.parse(existing);
-
-    // Pre-populate with realistic starting conversations from demo owners
-    const initialChats = [
-      {
-        id: 'chat_o1',
-        name: 'Marc Puig',
-        messages: [
-          { sender: 'them', text: "Hola! Soc el Marc, propietari del Seat León. Si necessites qualsevol cosa sobre el cotxe, digue'm!", ts: Date.now() - 1000 * 60 * 15 }
-        ]
-      },
-      {
-        id: 'chat_o2',
-        name: 'Laia Torres',
-        messages: [
-          { sender: 'them', text: 'Bona tarda! Estàs mirant el Tesla Model 3? Té Autopilot i supercàrrega gratuïta.', ts: Date.now() - 1000 * 60 * 60 }
-        ]
-      },
-      {
-        id: 'chat_o3',
-        name: 'Oriol Vidal',
-        messages: [
-          { sender: 'them', text: 'Hola! Tinc disponible el BMW Serie 3. Si tens dubtes sobre la recollida, parlem.', ts: Date.now() - 1000 * 60 * 120 }
-        ]
-      }
-    ];
-    localStorage.setItem('fd_chats', JSON.stringify(initialChats));
-    return initialChats;
+    return []; // start empty
   } catch {
     return [];
   }

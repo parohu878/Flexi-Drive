@@ -1,9 +1,9 @@
-const supabase = require('../config/supabase');
+const { supabase, supabaseAdmin } = require('../config/supabase');
 
 const authController = {
   // Para el registro de nuevos users
   register: async (req, res) => {
-    const { email, password, nombre, rol } = req.body;
+    const { email, password, nombre } = req.body;
     try {
       // 1. Registramos en "SupaBase Auth"
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -13,23 +13,41 @@ const authController = {
 
       if (authError) throw authError;
 
-      // 2. Los datos secundarios los insertamos en nuestra tabla en nuestra base de datos
-      // Supabase Auth crea el usuario, pero nosotros queremos guardarlo en nuestra tabla personalizada
-      const { data: userData, error: userError } = await supabase
+      if (!authData.user) {
+        throw new Error('No se pudo crear el usuario.');
+      }
+
+      // 2. Comprobar si el trigger ya ha creado el perfil en 'users' para evitar duplicaciones
+      const { data: existingUser } = await supabaseAdmin
         .from('users')
-        .insert([
-          { 
-            id_auth: authData.user.id, // Vinculamos con el ID de Auth de Supabase
-            email, 
-            nombre, 
-            rol: rol || 'inquilino' 
-          }
-        ])
-        .select();
+        .select('*')
+        .eq('id_auth', authData.user.id)
+        .maybeSingle();
 
-      if (userError) throw userError;
+      let userData = existingUser;
+      if (!userData) {
+        const { data: insertedUser, error: userError } = await supabaseAdmin
+          .from('users')
+          .insert([
+            { 
+              id_auth: authData.user.id, // Vinculamos con el ID de Auth de Supabase
+              email, 
+              nombre, 
+              rol: 'inquilino' // Rol predeterminado por seguridad
+            }
+          ])
+          .select()
+          .single();
 
-      res.status(201).json({ message: 'Usuario registrado con éxito', user: userData });
+        if (userError) throw userError;
+        userData = insertedUser;
+      }
+
+      res.status(201).json({ 
+        message: 'Usuario registrado con éxito', 
+        user: userData,
+        session: authData.session 
+      });
     } catch (error) {
       res.status(400).json({ error: error.message });
     }
@@ -44,40 +62,33 @@ const authController = {
         password,
       });
 
-        if (error) {
-          // Try fallback: check if user exists in our custom 'users' table
-          try {
-            const { data: usr, error: usrErr } = await supabase
-              .from('users')
-              .select('id_auth, email, nombre, rol')
-              .eq('email', email)
-              .single();
-            if (!usrErr && usr) {
-              const demoSession = {
-                access_token: 'demo-token:' + usr.email,
-                user: { id: usr.id_auth, email: usr.email, name: usr.nombre, role: usr.rol },
-              };
-              return res.json({ message: 'Login exitoso (demo fallback)', session: demoSession });
-            }
-          } catch (_) {}
-          // If not found, keep original error handling
-          throw error;
-        }
-          // Demo fallback: allow admin3@gmail.com / admin123 during testing
-          if (email === 'admin3@gmail.com' && password === 'admin123') {
-            const demoSession = {
-              access_token: 'demo-token:' + email,
-              user: { id: 'admin-demo', email, role: 'admin' }
-            };
-            return res.json({ message: 'Login exitoso (demo)', session: demoSession });
-          }
-          throw error;
+      if (error) {
+        return res.status(401).json({ error: 'Credenciales inválidas' });
+      }
 
-      res.json({ message: 'Login exitoso', session: data.session });
+      if (!data.session) {
+        return res.status(401).json({ error: 'Inicie sesión después de confirmar su email.' });
+      }
+
+      // Obtener el perfil público del usuario usando supabaseAdmin para evitar RLS
+      const { data: profile } = await supabaseAdmin
+        .from('users')
+        .select('*')
+        .eq('id_auth', data.user.id)
+        .maybeSingle();
+
+      // Successful login
+      return res.json({ 
+        message: 'Login exitoso', 
+        session: data.session,
+        user: profile || { id_auth: data.user.id, email: data.user.email, rol: 'inquilino' }
+      });
     } catch (error) {
-      res.status(401).json({ error: 'Credenciales inválidas' });
+      return res.status(401).json({ error: 'Credenciales inválidas' });
     }
-  }
+  },
 };
 
 module.exports = authController;
+
+

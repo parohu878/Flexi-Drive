@@ -192,16 +192,26 @@
 
 /* Mobile menu */
 .mobile-menu {
-  background: rgba(13,11,20,.98);
-  border-top: 1px solid rgba(155,77,202,.12);
+  position: absolute;
+  top: 64px;
+  left: 0;
+  right: 0;
+  background: rgba(13, 11, 20, 0.98);
+  border-top: 1px solid rgba(155, 77, 202, 0.12);
+  border-bottom: 1px solid rgba(155, 77, 202, 0.12);
   padding: 12px 24px 16px;
   display: flex;
   flex-direction: column;
   gap: 4px;
   animation: fadeInUp .2s ease;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
 }
 
 .mobile-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   background: none;
   border: none;
   color: rgba(232,232,242,.6);
@@ -211,7 +221,6 @@
   text-transform: uppercase;
   padding: 10px 12px;
   border-radius: 8px;
-  text-align: left;
   cursor: pointer;
   transition: all .2s;
 }
@@ -226,3 +235,67 @@
   .btn-login, .btn-register { display: none; }
   .hamburger { display: flex; }
 }
+
+.navbar-user-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px;
+  border-radius: 10px;
+  background: rgba(155, 77, 202, 0.1);
+  border: 1px solid rgba(155, 77, 202, 0.2);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.navbar-user-card:hover {
+  background: rgba(155, 77, 202, 0.15);
+  border-color: rgba(155, 77, 202, 0.35);
+}
+
+.navbar-user-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #9b4dca, #e040fb);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.navbar-user-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e8e8f2;
+}
+
+@media (max-width: 580px) {
+  .navbar-inner {
+    padding: 0 12px;
+    gap: 12px;
+  }
+  .navbar-logo {
+    gap: 6px;
+  }
+  .logo-img {
+    width: 60px;
+    height: 60px;
+  }
+  .logo-text {
+    font-size: 11px;
+    letter-spacing: .08em;
+  }
+  .navbar-user-card {
+    padding: 4px 8px;
+    gap: 0;
+    background: none;
+    border-color: transparent;
+  }
+  .navbar-user-name {
+    display: none;
+  }
+}
+

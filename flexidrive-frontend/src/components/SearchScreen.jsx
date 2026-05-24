@@ -27,7 +27,7 @@ const carIcon = (color = '#9b4dca', isHovered = false) => L.divIcon({
     border: 2px solid rgba(255,255,255,${isHovered ? '0.6' : '0.3'});
     box-shadow: 0 3px ${isHovered ? '16px' : '12px'} rgba(0,0,0,${isHovered ? '0.6' : '0.4'});
     transition: all .2s;
-  "><svg xmlns="http://www.w3.org/2000/svg" width="${isHovered?16:14}" height="${isHovered?16:14}" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(45deg)"><path d="M5 17a2 2 0 1 0 4 0 2 2 0 0 0-4 0Zm10 0a2 2 0 1 0 4 0 2 2 0 0 0-4 0Z"/><path d="M3 17h-1v-6l2-5h12l2 5v6h-1M7 17h10"/><path d="M5 12h14"/></svg></div>`,
+  "><svg xmlns="http://www.w3.org/2000/svg" width="${isHovered?16:14}" height="${isHovered?16:14}" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(45deg)"><path d="M2 13h2a2.5 2.5 0 0 1 5 0h6a2.5 2.5 0 0 1 5 0h2"/><path d="M2 13v-2.5c0-.8.5-1.5 1.2-1.8l3.3-1.4A3 3 0 0 1 9.8 7H14.2a3 3 0 0 1 2.1.8l3.3 1.4c.7.3 1.2 1 1.2 1.8V13"/><path d="M12 7v6" opacity="0.5"/><circle cx="6.5" cy="13" r="2.5"/><circle cx="6.5" cy="13" r="0.8" fill="#fff"/><circle cx="17.5" cy="13" r="2.5"/><circle cx="17.5" cy="13" r="0.8" fill="#fff"/></svg></div>`,
   iconSize: [isHovered ? 38 : 32, isHovered ? 38 : 32],
   iconAnchor: [isHovered ? 19 : 16, isHovered ? 38 : 32],
   popupAnchor: [0, isHovered ? -38 : -32],
@@ -229,7 +229,13 @@ export default function SearchScreen({ navigate, cars: initialCars, loadCars, lo
             const fav = isFavorite(car.id);
             return (
               <div key={car.id} className={`car-row ${hovered === car.id ? 'highlighted' : ''}`} onClick={() => navigate('detail', car)} onMouseEnter={() => setHovered(car.id)} onMouseLeave={() => setHovered(null)}>
-                <div className="cr-img"><CarMiniature size="small" color={car.color} /></div>
+                <div className="cr-img">
+                  {car.images && car.images.length > 0 ? (
+                    <img src={car.images[0]} alt={car.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' }} />
+                  ) : (
+                    <CarMiniature size="small" color={car.color} />
+                  )}
+                </div>
                 <div className="cr-info">
                   <div className="cr-name">{car.name}</div>
                   <div className="cr-badges">

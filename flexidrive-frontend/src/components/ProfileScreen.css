@@ -85,6 +85,11 @@
   font-weight: 700;
   color: #fff;
   letter-spacing: .04em;
+  margin-bottom: 24px;
+}
+
+.pm-header .profile-section-title {
+  margin-bottom: 0;
 }
 
 /* ── RESERVATIONS ── */
@@ -296,6 +301,7 @@
 .sf-row { display: flex; flex-direction: column; gap: 4px; }
 .sf-lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--td); font-weight: 600; }
 .sf-inp {
+  width: 100%;
   background: var(--bg);
   border: 1px solid rgba(155,77,202,.2);
   border-radius: 8px;
@@ -544,4 +550,16 @@
   .confirm-modal { padding: 28px 20px; }
   .confirm-actions { flex-direction: column; }
   .confirm-cancel-btn, .confirm-ok-btn { max-width: 100%; }
+  
+  .settings-section-header {
+    gap: 8px;
+  }
+  .settings-section-header > div {
+    min-width: 0;
+  }
+  .settings-section-header .btn-ghost-sm {
+    flex-shrink: 0;
+    padding: 6px 10px;
+    font-size: 11px;
+  }
 }

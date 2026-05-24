@@ -417,5 +417,7 @@ select.field-input option { background: #13101e; color: var(--t); }
 
 @media (max-width: 600px) {
   .photo-previews { grid-template-columns: repeat(2, 1fr); }
+  .sni-label { display: none; }
+  .step-nav-item { gap: 0; }
 }
 

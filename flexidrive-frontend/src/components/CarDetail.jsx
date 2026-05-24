@@ -22,7 +22,7 @@ const carPinIcon = (color = '#9b4dca') => L.divIcon({
     display: flex; align-items: center; justify-content: center;
     border: 2px solid rgba(255,255,255,0.4);
     box-shadow: 0 4px 16px rgba(0,0,0,0.5), 0 0 20px ${color}44;
-  "><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(45deg)"><path d="M5 17a2 2 0 1 0 4 0 2 2 0 0 0-4 0Zm10 0a2 2 0 1 0 4 0 2 2 0 0 0-4 0Z"/><path d="M3 17h-1v-6l2-5h12l2 5v6h-1M7 17h10"/><path d="M5 12h14"/></svg></div>`,
+  "><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(45deg)"><path d="M2 13h2a2.5 2.5 0 0 1 5 0h6a2.5 2.5 0 0 1 5 0h2"/><path d="M2 13v-2.5c0-.8.5-1.5 1.2-1.8l3.3-1.4A3 3 0 0 1 9.8 7H14.2a3 3 0 0 1 2.1.8l3.3 1.4c.7.3 1.2 1 1.2 1.8V13"/><path d="M12 7v6" opacity="0.5"/><circle cx="6.5" cy="13" r="2.5"/><circle cx="6.5" cy="13" r="0.8" fill="#fff"/><circle cx="17.5" cy="13" r="2.5"/><circle cx="17.5" cy="13" r="0.8" fill="#fff"/></svg></div>`,
   iconSize: [40, 40], iconAnchor: [20, 40], popupAnchor: [0, -40],
 });
 
@@ -61,12 +61,27 @@ export default function CarDetail({ car, navigate, showToast, onRequireAuth }) {
     if (!isAuthenticated) { onRequireAuth(); return; }
     if (!selectedSlot) { showToast('Selecciona una franja horària primer', 'error'); return; }
     setReserving(true);
+    
+    // Calcular fechas de inicio y fin
+    const start = new Date();
+    if (selectedSlot !== 'Ara mateix') {
+      const [h, m] = selectedSlot.split(':').map(Number);
+      start.setHours(h, m, 0, 0);
+      if (start < new Date()) {
+        start.setDate(start.getDate() + 1);
+      }
+    }
+    const end = new Date(start.getTime() + hours * 60 * 60 * 1000);
+
     try {
-      addReservation({ carId: car.id, car, date: new Date().toLocaleDateString('ca-ES', { day: 'numeric', month: 'short', year: 'numeric' }), startTime: selectedSlot, hours, price: total, fee, total: total + fee });
+      await addReservation(car.id, start, end);
       showToast(`Reserva confirmada! ${car.name} a les ${selectedSlot}`);
       setTimeout(() => navigate('profile'), 1200);
-    } catch (err) { showToast(`${err.message || 'Error al reservar'}`, 'error'); }
-    finally { setReserving(false); }
+    } catch (err) { 
+      showToast(`${err.message || 'Error al reservar'}`, 'error'); 
+    } finally { 
+      setReserving(false); 
+    }
   };
 
   const handleContactOwner = () => {
@@ -102,7 +117,13 @@ export default function CarDetail({ car, navigate, showToast, onRequireAuth }) {
           <button className={`fav-btn detail-fav ${fav ? 'active' : ''}`} onClick={() => toggleFavorite(car.id)}>
             <Icon name={fav ? 'heart' : 'heartOutline'} size={18} color={fav ? '#e040fb' : 'rgba(255,255,255,.6)'} fill={fav ? '#e040fb' : 'none'} />
           </button>
-          <div className="dh-car"><CarMiniature size="large" color={car.color} /></div>
+          <div className="dh-car">
+            {car.images && car.images.length > 0 ? (
+              <img src={car.images[0]} alt={car.name} style={{ maxWidth: '100%', maxHeight: '220px', objectFit: 'contain', borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }} />
+            ) : (
+              <CarMiniature size="large" color={car.color} />
+            )}
+          </div>
         </div>
       </div>
 
@@ -171,7 +192,6 @@ export default function CarDetail({ car, navigate, showToast, onRequireAuth }) {
                   <div className="oc-sub">Propietari verificat · {reviewCount} alquileres</div>
                 </div>
                 <div className="oc-rating"><Icon name="star" size={12} color="#f5c518" /> {rating}</div>
-                <button className="btn-ghost-sm oc-msg" onClick={handleContactOwner}><Icon name="message" size={12} /> Contactar</button>
               </div>
 
               {car.lat && car.lng && (

@@ -36,13 +36,9 @@ export default function App() {
     setCarsLoading(true);
     try {
       const res = await carsService.getCars({ available: 'true', limit: 50, ...params });
-      const apiCars = res.data || [];
-      // Merge with locally published cars
-      const published = JSON.parse(localStorage.getItem('fd_published_cars') || '[]');
-      setCars([...apiCars, ...published.filter(pc => !apiCars.find(ac => ac.id === pc.id))]);
+      setCars(res.data || []);
     } catch (err) {
       console.error('Error loading cars:', err);
-      // Fallback: set empty list if API fails
       setCars([]);
     } finally {
       setCarsLoading(false);

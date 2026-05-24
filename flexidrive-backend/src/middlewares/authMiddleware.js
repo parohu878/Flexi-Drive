@@ -1,4 +1,4 @@
-const supabase = require('../config/supabase');
+const { supabase } = require('../config/supabase');
 
 const authMiddleware = async (req, res, next) => {
   // 1. Obtener el token de la cabecera 'Authorization'
@@ -10,30 +10,6 @@ const authMiddleware = async (req, res, next) => {
 
   const token = authHeader.split(' ')[1];
 
-  // Soporte para tokens demo en desarrollo/pruebas
-  if (token.startsWith('demo-token:')) {
-    const email = token.split(':')[1];
-    try {
-      const { data: usr, error: usrErr } = await supabase
-        .from('users')
-        .select('*')
-        .eq('email', email)
-        .single();
-      
-      if (usrErr || !usr) {
-        return res.status(401).json({ error: 'Usuario demo no encontrado en la base de datos.' });
-      }
-
-      req.user = {
-        id: usr.id_auth || `demo-id-${usr.id}`,
-        email: usr.email
-      };
-      return next();
-    } catch (err) {
-      return res.status(401).json({ error: 'Token demo inválido o error en consulta.' });
-    }
-  }
-
   try {
     // 2. Verificar el token con Supabase Auth
     const { data: { user }, error } = await supabase.auth.getUser(token);
@@ -42,9 +18,34 @@ const authMiddleware = async (req, res, next) => {
       return res.status(401).json({ error: 'Token inválido o expirado.' });
     }
 
-    // 3. Si el token es válido, guardamos los datos del usuario en 'req'
-    // Esto permite que los siguientes controladores sepan QUIÉN está haciendo la petición
-    req.user = user;
+    // 3. Buscar el perfil en la base de datos pública usando el ID de autenticación
+    const { data: dbUser, error: dbUserError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id_auth', user.id)
+      .single();
+
+    if (dbUserError || !dbUser) {
+      // Si el perfil no existe, intentamos crearlo con datos básicos del auth user
+      const nombreDefault = user.user_metadata?.nombre || user.email.split('@')[0];
+      const { data: newProfile, error: createError } = await supabase
+        .from('users')
+        .insert([{
+          id_auth: user.id,
+          email: user.email,
+          nombre: nombreDefault,
+          rol: 'inquilino'
+        }])
+        .select()
+        .single();
+
+      if (createError) {
+        return res.status(401).json({ error: 'Perfil de usuario no encontrado y no pudo ser creado.' });
+      }
+      req.user = newProfile;
+    } else {
+      req.user = dbUser;
+    }
     
     // 4. Continuar con la siguiente función (el controlador)
     next();
@@ -54,3 +55,4 @@ const authMiddleware = async (req, res, next) => {
 };
 
 module.exports = authMiddleware;
+

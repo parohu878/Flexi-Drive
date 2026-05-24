@@ -1,22 +1,23 @@
-const supabase = require('../config/supabase');
+const { getClient } = require('../config/supabase');
 
 const availabilityController = {
   // Añadir un rango de disponibilidad para un vehículo
   addAvailability: async (req, res) => {
     const { vehicle_id, fecha_inicio, fecha_fin } = req.body;
+    const supabase = getClient(req);
 
     try {
       // 1. Verificar que el vehículo pertenece al usuario que hace la petición
       const { data: vehicle, error: vError } = await supabase
         .from('vehicles')
-        .select('propietario_id, users!inner(id_auth)')
+        .select('propietario_id')
         .eq('id', vehicle_id)
         .single();
 
       if (vError || !vehicle) throw new Error('Vehículo no encontrado');
       
-      // Seguridad: Solo el dueño puede poner disponibilidad
-      if (vehicle.users.id_auth !== req.user.id) {
+      // Seguridad: Solo el dueño o un admin puede poner disponibilidad
+      if (vehicle.propietario_id !== req.user.id && req.user.rol !== 'admin') {
         return res.status(403).json({ error: 'No tienes permiso para gestionar este vehículo' });
       }
 
@@ -41,6 +42,7 @@ const availabilityController = {
   // Obtener la disponibilidad de un vehículo específico
   getVehicleAvailability: async (req, res) => {
     const { vehicle_id } = req.params;
+    const supabase = getClient(req);
     try {
       const { data, error } = await supabase
         .from('availabilities')
@@ -58,3 +60,4 @@ const availabilityController = {
 };
 
 module.exports = availabilityController;
+

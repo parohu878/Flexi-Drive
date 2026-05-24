@@ -1,6 +1,6 @@
 const icons = {
   car: (
-    <><path d="M5 17a2 2 0 1 0 4 0 2 2 0 0 0-4 0Zm10 0a2 2 0 1 0 4 0 2 2 0 0 0-4 0Z" /><path d="M3 17h-1v-6l2-5h12l2 5v6h-1M7 17h10" strokeLinejoin="round" /><path d="M5 12h14" /><path d="M4 7l1.5-3h13L20 7" strokeLinejoin="round" /></>
+    <><path d="M2 13h2a2.5 2.5 0 0 1 5 0h6a2.5 2.5 0 0 1 5 0h2" strokeLinecap="round" strokeLinejoin="round" /><path d="M2 13v-2.5c0-.8.5-1.5 1.2-1.8l3.3-1.4A3 3 0 0 1 9.8 7H14.2a3 3 0 0 1 2.1.8l3.3 1.4c.7.3 1.2 1 1.2 1.8V13" strokeLinecap="round" strokeLinejoin="round" /><path d="M12 7v6" opacity="0.5" /><circle cx="6.5" cy="13" r="2.5" /><circle cx="6.5" cy="13" r="0.8" fill="currentColor" stroke="none" /><circle cx="17.5" cy="13" r="2.5" /><circle cx="17.5" cy="13" r="0.8" fill="currentColor" stroke="none" /></>
   ),
   search: (
     <><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></>

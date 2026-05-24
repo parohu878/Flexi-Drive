@@ -1,41 +1,40 @@
-const supabase = require('../config/supabase');
+const { getClient } = require('../config/supabase');
 
 const reviewController = {
   // Crear una nueva reseña
   createReview: async (req, res) => {
     const { booking_id, destinatario_id, puntuacion, comentario, tipo } = req.body;
+    const supabase = getClient(req);
 
     try {
-      // 1. Obtener ID del autor (el usuario logueado)
-      const { data: autor } = await supabase
-        .from('users')
-        .select('id')
-        .eq('id_auth', req.user.id)
-        .single();
+      const autor_id = req.user.id;
 
       // 2. Insertar la reseña
       const { data, error } = await supabase
         .from('reviews')
         .insert([{
-          booking_id,
-          autor_id: autor.id,
-          destinatario_id,
+          booking_id: parseInt(booking_id),
+          autor_id,
+          destinatario_id: destinatario_id ? parseInt(destinatario_id) : null,
           puntuacion,
           comentario,
           tipo
         }])
-        .select();
+        .select()
+        .single();
 
       if (error) throw error;
 
       // 3. Opcional: Notificar al destinatario que ha recibido una valoración
-      await supabase.from('notifications').insert([{
-        user_id: destinatario_id,
-        tipo: 'valoracion',
-        mensaje: `Has recibido una nueva valoración de ${puntuacion} estrellas.`
-      }]);
+      if (destinatario_id) {
+        await supabase.from('notifications').insert([{
+          user_id: parseInt(destinatario_id),
+          tipo: 'valoracion',
+          mensaje: `Has recibido una nueva valoración de ${puntuacion} estrellas.`
+        }]);
+      }
 
-      res.status(201).json({ message: 'Reseña publicada con éxito', review: data[0] });
+      res.status(201).json({ message: 'Reseña publicada con éxito', review: data });
     } catch (error) {
       res.status(400).json({ error: error.message });
     }
@@ -44,6 +43,7 @@ const reviewController = {
   // Obtener reseñas de un usuario o vehículo específico
   getReviews: async (req, res) => {
     const { type, id } = req.query; // type: 'user' o 'vehicle'
+    const supabase = getClient(req);
     try {
       let query = supabase.from('reviews').select('*, users!autor_id(nombre, foto_perfil)');
       
@@ -66,3 +66,5 @@ const reviewController = {
 };
 
 module.exports = reviewController;
+
+

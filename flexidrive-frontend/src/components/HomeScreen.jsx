@@ -268,7 +268,11 @@ function CarCard({ car, onClick }) {
   return (
     <div className="car-card" onClick={onClick}>
       <div className="cc-img">
-        <CarMiniature size="small" color={car.color} />
+        {car.images && car.images.length > 0 ? (
+          <img src={car.images[0]} alt={car.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' }} />
+        ) : (
+          <CarMiniature size="small" color={car.color} />
+        )}
         <div className="cc-overlay" />
         <div className="cc-price">{price}€<span>/h</span></div>
         <div style={{ position: 'absolute', top: 8, left: 8, display: 'flex', gap: 6, zIndex: 2 }}>

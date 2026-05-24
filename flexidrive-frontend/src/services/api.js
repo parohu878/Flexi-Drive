@@ -1,4 +1,4 @@
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
 
 // ── Helper ─────────────────────────────────────────────────────────
 function getToken() {
@@ -40,43 +40,43 @@ const transMapToFrontend = {
     name: `${v.marca} ${v.modelo}`,
     make: v.marca,
     model: v.modelo,
-    year: 2024,
+    year: v.año || v.year || 2024,
     location: v.direccion || 'Ubicación no especificada',
-    city: v.direccion || 'Desconocido',
+    city: v.direccion ? v.direccion.split(',')[1]?.trim() || v.direccion : 'Barcelona',
     lat: v.latitud || 41.3879,
     lng: v.longitud || 2.1699,
-    pricePerHour: v.precio_dia, // Mostramos precio por día como precio general
-    seats: v.plazas,
-    fuel: fuelMapToFrontend[v.combustible] || v.combustible,
-    transmission: transMapToFrontend[v.transmision] || v.transmision,
+    pricePerHour: v.precio_dia || 0,
+    seats: v.plazas || 5,
+    fuel: fuelMapToFrontend[v.combustible] || v.combustible || 'Gasolina',
+    transmission: transMapToFrontend[v.transmision] || v.transmision || 'Manual',
     color: ['#9b4dca', '#e040fb', '#4db8ff', '#5dcaa5', '#ff8c42', '#c47dff'][Math.floor(Math.random() * 6)],
     rating: 5.0,
     totalReviews: 0,
-    features: [],
-    description: v.descripcion,
+    features: v.caracteristicas || v.features || [],
+    description: v.descripcion || '',
     owner: v.users ? {
       id: v.users.id,
       name: v.users.nombre,
       avatar: v.users.foto_perfil || (v.users.nombre ? v.users.nombre.substring(0, 2).toUpperCase() : 'FD'),
       rating: 5
     } : null,
-    availableFrom: '00:00',
-    availableTo: '23:59',
-    dist: v.radio_km || 0
+    availableFrom: v.disponible_desde || v.availableFrom || '08:00',
+    availableTo: v.disponible_hasta || v.availableTo || '20:00',
+    dist: v.radio_km || 0,
+    images: v.vehicle_photos ? v.vehicle_photos.map(p => p.url_foto) : []
   });
 
 // ── Auth ───────────────────────────────────────────────────────────
 export const authService = {
   login: async (email, password) => {
     const data = await request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
-    // El backend devuelve { message, session: { access_token, user: {...} } }
     return {
       token: data.session.access_token,
       user: {
-        id: data.session.user.id,
-        email: data.session.user.email,
-        name: data.session.user.email.split('@')[0],
-        avatar: data.session.user.email.substring(0, 2).toUpperCase()
+        id: data.user.id,
+        email: data.user.email,
+        name: data.user.nombre || data.user.email.split('@')[0],
+        avatar: data.user.foto_perfil || (data.user.nombre ? data.user.nombre.substring(0, 2).toUpperCase() : 'FD')
       }
     };
   },
@@ -84,16 +84,15 @@ export const authService = {
   register: async (name, email, password) => {
     const data = await request('/auth/register', { 
       method: 'POST', 
-      body: JSON.stringify({ nombre: name, email, password, rol: 'inquilino' }) 
+      body: JSON.stringify({ nombre: name, email, password }) 
     });
-    // Hacemos login automático después del registro para obtener el token
     return authService.login(email, password);
   },
 
   getMe: async () => {
     const data = await request('/users/profile');
     return {
-      id: data.id_auth,
+      id: data.id,
       name: data.nombre,
       email: data.email,
       avatar: data.foto_perfil || (data.nombre ? data.nombre.substring(0, 2).toUpperCase() : 'FD'),
@@ -109,7 +108,6 @@ export const carsService = {
     const data = await request('/vehicles');
     let cars = data.map(mapVehicleToCar);
     
-    // Filtrado básico en frontend ya que el backend devuelve todos los activos
     if (params.q) {
       const q = params.q.toLowerCase();
       cars = cars.filter(c => c.name.toLowerCase().includes(q) || c.location.toLowerCase().includes(q));
@@ -122,14 +120,12 @@ export const carsService = {
   },
 
   getCarById: async (id) => {
-    const data = await request('/vehicles');
-    const vehicle = data.find(v => v.id === id || v.id.toString() === id);
-    if (!vehicle) throw new Error('Vehículo no encontrado');
-    return mapVehicleToCar(vehicle);
+    const data = await request(`/vehicles/${id}`);
+    if (!data) throw new Error('Vehículo no encontrado');
+    return mapVehicleToCar(data);
   },
 
   createCar: async (data) => {
-    // Map frontend fuel and transmission values to DB format
     const fuelMapToDb = {
       'Gasolina': 'gasolina',
       'Diésel': 'diesel',
@@ -150,13 +146,57 @@ export const carsService = {
     return mapVehicleToCar(res.vehicle);
   },
 
-  updateCar: (id, data) => Promise.reject(new Error('No implementado en backend')),
-  deleteCar: (id) => Promise.reject(new Error('No implementado en backend')),
+  updateCar: async (id, data) => {
+    const fuelMapToDb = {
+      'Gasolina': 'gasolina',
+      'Diésel': 'diesel',
+      'Eléctrico': 'electrico',
+      'Híbrido': 'hibrido',
+      'GLP': 'glp'
+    };
+    const transmissionMapToDb = {
+      'Manual': 'manual',
+      'Automático': 'automatico'
+    };
+    const payload = {
+      ...data,
+      fuel: fuelMapToDb[data.fuel] || data.fuel,
+      transmission: transmissionMapToDb[data.transmission] || data.transmission
+    };
+    const res = await request(`/vehicles/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+    return mapVehicleToCar(res.vehicle);
+  },
 
-  getCarsByOwner: async (userId) => {
+  deleteCar: async (id) => {
+    return request(`/vehicles/${id}`, { method: 'DELETE' });
+  },
+
+  getCarsByOwner: async () => {
     const data = await request('/vehicles/my-vehicles');
     return data.map(mapVehicleToCar);
   },
+
+  uploadPhoto: async (carId, photoBlob, fileName, isPrincipal) => {
+    const formData = new FormData();
+    formData.append('image', photoBlob, fileName);
+    formData.append('es_principal', isPrincipal);
+
+    const token = getToken();
+    const headers = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const res = await fetch(`${API_BASE}/vehicles/${carId}/photos`, {
+      method: 'POST',
+      headers,
+      body: formData
+    });
+    
+    const resData = await res.json();
+    if (!res.ok) {
+      throw new Error(resData.error || 'Error al subir foto');
+    }
+    return resData.photo;
+  }
 };
 
 // ── Reservations ───────────────────────────────────────────────────
@@ -173,8 +213,11 @@ export const reservationsService = {
       price: b.precio_total,
       fee: b.precio_total * 0.1,
       total: b.precio_total * 1.1,
-      status: b.estado === 'confirmada' ? 'active' : b.estado,
-      createdAt: b.fecha_creacion
+      status: b.estado === 'confirmada' ? 'active' : b.estado === 'en curs' ? 'en_curs' : b.estado === 'cancelada' ? 'cancelled' : b.estado,
+      createdAt: b.created_at,
+      startDate: b.fecha_inicio,
+      endDate: b.fecha_fin,
+      propietarioId: b.propietario_id
     }));
   },
 
@@ -183,47 +226,26 @@ export const reservationsService = {
     return reservations.find(r => r.id === id);
   },
 
-  createReservation: async (carId, startTime, hours) => {
-    // 1. Crear una Request (solicitud)
-    const fecha_inicio = new Date().toISOString();
-    const fecha_fin = new Date(Date.now() + hours * 3600000).toISOString();
-    
-    const reqRes = await request('/requests', {
-      method: 'POST',
-      body: JSON.stringify({
-        fecha_inicio,
-        fecha_fin,
-        latitud: 41.38,
-        longitud: 2.15,
-        radio_km: 50,
-        tipo_vehiculo: 'cualquiera',
-        precio_max_dia: 99999
-      })
-    });
-    
-    // 2. Buscar si el coche hizo match
-    const matches = await request(`/requests/${reqRes.request.id}/matches`);
-    const match = matches.find(m => m.vehicle_id === carId || m.vehicle_id.toString() === carId.toString());
-    
-    if (!match) {
-      throw new Error('El vehículo no está disponible para estas fechas según el backend.');
-    }
-    
-    // 3. Crear Booking a partir del match
+  createReservation: async (carId, startDate, endDate) => {
     const bookingRes = await request('/bookings', {
       method: 'POST',
       body: JSON.stringify({
-        match_id: match.id,
-        fecha_inicio,
-        fecha_fin,
-        precio_total: match.precio * (hours/24) || match.precio
+        vehicle_id: carId,
+        fecha_inicio: new Date(startDate).toISOString(),
+        fecha_fin: new Date(endDate).toISOString()
       })
     });
-    
     return bookingRes.booking;
   },
 
-  cancelReservation: (id) => Promise.reject(new Error('Cancelar no implementado en backend')),
+  cancelReservation: async (id) => {
+    return request(`/bookings/${id}/cancel`, { method: 'PUT' });
+  },
+
+  completeReservation: async (id) => {
+    return request(`/bookings/${id}/complete`, { method: 'PUT' });
+  },
+
   getReservationsByCar: () => Promise.resolve([]),
 };
 
@@ -235,17 +257,17 @@ export const reviewsService = {
       avatar: r.users?.foto_perfil || 'FD',
       author: r.users?.nombre || 'Anónimo',
       rating: r.puntuacion,
-      date: new Date(r.fecha_creacion).toLocaleDateString(),
+      date: new Date(r.created_at).toLocaleDateString(),
       comment: r.comentario
     }));
   },
 
-  createReview: (carId, rating, comment, reservationId) =>
+  createReview: (carId, rating, comment, reservationId, ownerId) =>
     request('/reviews', {
       method: 'POST',
       body: JSON.stringify({
         booking_id: reservationId,
-        destinatario_id: null, // Asumimos que no requiere ID de propietario aquí directamente
+        destinatario_id: ownerId,
         puntuacion: rating,
         comentario: comment,
         tipo: 'inquilino_a_vehiculo'
@@ -266,5 +288,6 @@ export const usersService = {
         foto_perfil: data.avatar
       }) 
     }),
-  getMyStats: () => Promise.resolve({ totalRentals: 0, rating: 5 }),
+  getMyStats: () => request('/users/stats'),
 };
+

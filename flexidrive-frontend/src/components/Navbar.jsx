@@ -1,18 +1,19 @@
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { LanguageContext } from '../context/LanguageContext';
 import Icon from './Icon';
 import './Navbar.css';
 
 export default function Navbar({ screen, navigate, user, isAuthenticated, onLogin }) {
+  const { t } = useContext(LanguageContext);
   const [menuOpen, setMenuOpen] = useState(false);
   const { logout } = useAuth();
 
   const links = [
-    { id: 'home', label: 'Inicio', icon: 'home' },
-    { id: 'search', label: 'Buscar', icon: 'search' },
-    { id: 'publish', label: 'Publicar', icon: 'plus' },
-    { id: 'profile', label: 'Perfil', icon: 'user' },
-    { id: 'chat', label: 'Xat', icon: 'message' },
+    { id: 'home', label: t('home'), icon: 'home' },
+    { id: 'search', label: t('search'), icon: 'search' },
+    { id: 'publish', label: t('publish'), icon: 'plus' },
+    { id: 'profile', label: t('profile'), icon: 'user' },
   ];
 
   const handleLogout = () => {
@@ -46,28 +47,17 @@ export default function Navbar({ screen, navigate, user, isAuthenticated, onLogi
         <div className="navbar-cta">
           {isAuthenticated ? (
             <>
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 10,
-                padding: '6px 14px', borderRadius: 10,
-                background: 'rgba(155,77,202,0.1)',
-                border: '1px solid rgba(155,77,202,0.2)',
-                cursor: 'pointer',
-              }} onClick={() => navigate('profile')}>
-                <div style={{
-                  width: 30, height: 30, borderRadius: 8,
-                  background: 'linear-gradient(135deg, #9b4dca, #e040fb)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 12, fontWeight: 700, color: '#fff',
-                }}>{user?.avatar || '??'}</div>
-                <span style={{ fontSize: 14, fontWeight: 600, color: '#e8e8f2' }}>{user?.name?.split(' ')[0]}</span>
+              <div className="navbar-user-card" onClick={() => navigate('profile')}>
+                <div className="navbar-user-avatar">{user?.avatar || '??'}</div>
+                <span className="navbar-user-name">{user?.name?.split(' ')[0]}</span>
               </div>
-              <button className="btn-login" onClick={handleLogout}>Sortir</button>
+              <button className="btn-login" onClick={handleLogout}>{t('logout')}</button>
             </>
           ) : (
             <>
-              <button className="btn-login" onClick={onLogin}>Entrar</button>
+              <button className="btn-login" onClick={onLogin}>{t('login')}</button>
               <button className="btn-register" onClick={() => navigate('publish')}>
-                Publicar coche
+                {t('publish_car')}
               </button>
             </>
           )}
@@ -100,12 +90,12 @@ export default function Navbar({ screen, navigate, user, isAuthenticated, onLogi
           {isAuthenticated ? (
             <button className="mobile-link" onClick={() => { handleLogout(); setMenuOpen(false); }}>
               <Icon name="logout" size={16} color="var(--pg)" />
-              Sortir ({user?.name?.split(' ')[0]})
+              {t('logout')} ({user?.name?.split(' ')[0]})
             </button>
           ) : (
             <button className="mobile-link" onClick={() => { onLogin(); setMenuOpen(false); }}>
               <Icon name="login" size={16} color="var(--pg)" />
-              Entrar
+              {t('login')}
             </button>
           )}
         </div>

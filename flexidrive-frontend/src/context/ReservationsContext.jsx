@@ -1,44 +1,75 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { DEMO_RESERVATIONS } from '../services/demoData';
+import { useAuth } from '../context/AuthContext';
+import { reservationsService } from '../services/api';
 
 const ReservationsContext = createContext(null);
-const STORAGE_KEY = 'fd_reservations';
 
 export function ReservationsProvider({ children }) {
-  const [reservations, setReservations] = useState(() => {
+  const { user, isAuthenticated } = useAuth();
+  const [reservations, setReservations] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const loadReservations = useCallback(async () => {
+    if (!isAuthenticated || !user) {
+      setReservations([]);
+      return;
+    }
+    setLoading(true);
     try {
-      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY));
-      return stored && stored.length > 0 ? stored : DEMO_RESERVATIONS;
-    } catch { return DEMO_RESERVATIONS; }
-  });
+      const data = await reservationsService.getMyReservations();
+      const updated = data.map(r => {
+        const now = new Date();
+        const start = new Date(r.startDate);
+        const end = new Date(r.endDate);
+
+        if (r.status === 'active' || r.status === 'en_curs') {
+          if (now >= end) {
+            return { ...r, status: 'completed' };
+          } else if (now >= start) {
+            return { ...r, status: 'en_curs' };
+          }
+        }
+        return r;
+      });
+      setReservations(updated);
+    } catch (e) {
+      console.error('Error loading reservations:', e);
+    } finally {
+      setLoading(false);
+    }
+  }, [user, isAuthenticated]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(reservations));
-  }, [reservations]);
+    loadReservations();
+  }, [loadReservations]);
 
-  const addReservation = useCallback((reservation) => {
-    const newRes = {
-      ...reservation,
-      renterId: user?.id,
-      id: 'r' + Date.now(),
-      status: 'active',
-      createdAt: new Date().toISOString(),
-    };
-    setReservations(prev => [newRes, ...prev]);
-    return newRes;
-  }, []);
+  const addReservation = useCallback(async (carId, startDate, endDate) => {
+    try {
+      const newRes = await reservationsService.createReservation(carId, startDate, endDate);
+      await loadReservations();
+      return newRes;
+    } catch (error) {
+      throw error;
+    }
+  }, [loadReservations]);
 
-  const cancelReservation = useCallback((id) => {
-    setReservations(prev =>
-      prev.map(r => r.id === id ? { ...r, status: 'cancelled' } : r)
-    );
-  }, []);
+  const cancelReservation = useCallback(async (id) => {
+    try {
+      await reservationsService.cancelReservation(id);
+      await loadReservations();
+    } catch (error) {
+      throw error;
+    }
+  }, [loadReservations]);
 
-  const completeReservation = useCallback((id) => {
-    setReservations(prev =>
-      prev.map(r => r.id === id ? { ...r, status: 'completed' } : r)
-    );
-  }, []);
+  const completeReservation = useCallback(async (id) => {
+    try {
+      await reservationsService.completeReservation(id);
+      await loadReservations();
+    } catch (error) {
+      throw error;
+    }
+  }, [loadReservations]);
 
   const getByStatus = useCallback((status) => {
     if (!status || status === 'all') return reservations;
@@ -47,14 +78,14 @@ export function ReservationsProvider({ children }) {
 
   const stats = {
     total: reservations.length,
-    active: reservations.filter(r => r.status === 'active').length,
+    active: reservations.filter(r => r.status === 'active' || r.status === 'en_curs').length,
     completed: reservations.filter(r => r.status === 'completed').length,
-    cancelled: reservations.filter(r => r.status === 'cancelled').length,
+    cancelled: reservations.filter(r => r.status === 'cancelada' || r.status === 'cancelled').length,
     totalSpent: reservations.filter(r => r.status === 'completed').reduce((s, r) => s + (r.total || r.price || 0), 0),
   };
 
   return (
-    <ReservationsContext.Provider value={{ reservations, addReservation, cancelReservation, completeReservation, getByStatus, stats }}>
+    <ReservationsContext.Provider value={{ reservations, loading, addReservation, cancelReservation, completeReservation, getByStatus, stats, loadReservations }}>
       {children}
     </ReservationsContext.Provider>
   );
@@ -65,3 +96,4 @@ export function useReservations() {
   if (!ctx) throw new Error('useReservations must be used within ReservationsProvider');
   return ctx;
 }
+
