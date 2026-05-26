@@ -38,6 +38,11 @@ export default function CarDetail({ car, navigate, showToast, onRequireAuth }) {
   const [reserving, setReserving] = useState(false);
   const [reviews, setReviews] = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [activeImgIndex, setActiveImgIndex] = useState(0);
+
+  useEffect(() => {
+    setActiveImgIndex(0);
+  }, [car.id]);
 
   // Payment states
   const [payMethod, setPayMethod] = useState('cash');
@@ -189,7 +194,44 @@ export default function CarDetail({ car, navigate, showToast, onRequireAuth }) {
           </button>
           <div className="dh-car">
             {car.images && car.images.length > 0 ? (
-              <img src={car.images[0]} alt={car.name} style={{ maxWidth: '100%', maxHeight: '220px', objectFit: 'contain', borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }} />
+              <div className="detail-carousel">
+                <img
+                  src={car.images[activeImgIndex]}
+                  alt={`${car.name} - ${activeImgIndex + 1}`}
+                  className="carousel-img"
+                />
+                {car.images.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      className="carousel-btn prev"
+                      onClick={() => setActiveImgIndex(prev => (prev === 0 ? car.images.length - 1 : prev - 1))}
+                      aria-label="Anterior"
+                    >
+                      <Icon name="arrowLeft" size={16} color="#fff" />
+                    </button>
+                    <button
+                      type="button"
+                      className="carousel-btn next"
+                      onClick={() => setActiveImgIndex(prev => (prev === car.images.length - 1 ? 0 : prev + 1))}
+                      aria-label="Següent"
+                    >
+                      <Icon name="arrowRight" size={16} color="#fff" />
+                    </button>
+                    <div className="carousel-dots">
+                      {car.images.map((_, index) => (
+                        <button
+                          type="button"
+                          key={index}
+                          className={`carousel-dot ${index === activeImgIndex ? 'active' : ''}`}
+                          onClick={() => setActiveImgIndex(index)}
+                          aria-label={`Imatge ${index + 1}`}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
             ) : (
               <CarMiniature size="large" color={car.color} />
             )}

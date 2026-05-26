@@ -15,6 +15,12 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 });
 
+const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
+  const hours = String(Math.floor(i / 2)).padStart(2, '0');
+  const minutes = i % 2 === 0 ? '00' : '30';
+  return `${hours}:${minutes}`;
+});
+
 const DAYS = ['Dl', 'Dt', 'Dc', 'Dj', 'Dv', 'Ds', 'Dg'];
 const ALL_FEATURES = [
   'A/C', 'Bluetooth', 'USB', 'GPS', 'Càmera enrere', 'Càmera 360°',
@@ -55,10 +61,22 @@ const [dragOver, setDragOver] = useState(false);
   const goStep = (s) => { if (s === 2 && !validateStep1()) return; setStep(s); };
 
   const handleFiles = (files) => {
+    let currentPhotosCount = photos.length;
     Array.from(files).forEach(file => {
-      if (file.type.startsWith('image/') && photos.length < 8) {
+      if (file.type.startsWith('image/')) {
+        if (file.size > 5 * 1024 * 1024) {
+          showToast(`La imatge ${file.name} supera el límit de 5 MB`, 'error');
+          return;
+        }
+        if (currentPhotosCount >= 8) {
+          showToast('Màxim 8 fotos permeses', 'warning');
+          return;
+        }
+        currentPhotosCount++;
         const reader = new FileReader();
-        reader.onload = (e) => { setPhotos(prev => [...prev, { id: Date.now() + Math.random(), url: e.target.result, name: file.name }]); };
+        reader.onload = (e) => {
+          setPhotos(prev => [...prev, { id: Date.now() + Math.random(), url: e.target.result, name: file.name }]);
+        };
         reader.readAsDataURL(file);
       }
     });
@@ -256,8 +274,14 @@ const [dragOver, setDragOver] = useState(false);
                 <div className="day-chips">{DAYS.map((d, i) => (<button key={i} type="button" className={`day-chip ${activeDays.includes(i) ? 'on' : ''}`} onClick={() => toggleDay(i)}>{d}</button>))}</div>
               </div>
               <div className="field-row-2">
-                <div className="field-group"><label className="field-label">Des de</label><input className="field-input" type="time" value={form.availableFrom} onChange={set('availableFrom')} /></div>
-                <div className="field-group"><label className="field-label">Fins a</label><input className="field-input" type="time" value={form.availableTo} onChange={set('availableTo')} /></div>
+                <div className="field-group">
+                  <label className="field-label">Des de</label>
+                  <CustomSelect value={form.availableFrom} onChange={set('availableFrom')} options={TIME_OPTIONS} />
+                </div>
+                <div className="field-group">
+                  <label className="field-label">Fins a</label>
+                  <CustomSelect value={form.availableTo} onChange={set('availableTo')} options={TIME_OPTIONS} />
+                </div>
               </div>
               <div className="avail-preview">
                 <div className="ap-label">Vista prèvia</div>
@@ -286,7 +310,7 @@ const [dragOver, setDragOver] = useState(false);
                 <label className="field-label"><Icon name="camera" size={11} color="#c47dff" /> Fotos del cotxe ({photos.length}/8)</label>
                 <div className={`upload-zone ${dragOver ? 'drag-over' : ''} ${photos.length > 0 ? 'has-photos' : ''}`} onDrop={handleDrop} onDragOver={(e) => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)} onClick={() => fileInputRef.current?.click()}>
                   <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={(e) => handleFiles(e.target.files)} />
-                  {photos.length === 0 ? (<><div className="uz-icon"><Icon name="camera" size={32} color="#c47dff" /></div><div className="uz-text">Arrossega o fes clic per pujar fotos</div><div className="uz-hint">JPG, PNG · Màx. 10 MB per foto · Fins a 8 fotos</div></>) : (<div className="uz-add-more"><Icon name="plus" size={14} /> Afegir més fotos</div>)}
+                  {photos.length === 0 ? (<><div className="uz-icon"><Icon name="camera" size={32} color="#c47dff" /></div><div className="uz-text">Arrossega o fes clic per pujar fotos</div><div className="uz-hint">JPG, PNG · Màx. 5 MB per foto · Fins a 8 fotos</div></>) : (<div className="uz-add-more"><Icon name="plus" size={14} /> Afegir més fotos</div>)}
                 </div>
                 {photos.length > 0 && (
                   <div className="photo-previews">{photos.map((photo, i) => (<div key={photo.id} className="photo-preview"><img src={photo.url} alt={`Foto ${i + 1}`} /><button className="photo-remove" onClick={(e) => { e.stopPropagation(); removePhoto(photo.id); }}><Icon name="x" size={10} /></button>{i === 0 && <div className="photo-main-badge">Principal</div>}</div>))}</div>
