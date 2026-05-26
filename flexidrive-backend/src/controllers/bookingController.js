@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const bookingController = {
   // Crear una reserva directa
   createBooking: async (req, res) => {
-    const { vehicle_id, fecha_inicio, fecha_fin } = req.body;
+    const { vehicle_id, fecha_inicio, fecha_fin, metodo_pago } = req.body;
     const supabase = getClient(req);
 
     try {
@@ -63,7 +63,8 @@ const bookingController = {
           fecha_fin,
           precio_total,
           codigo: codigoReserva,
-          estado: 'confirmada'
+          estado: 'confirmada',
+          metodo_pago: metodo_pago || 'mano'
         }])
         .select()
         .single();

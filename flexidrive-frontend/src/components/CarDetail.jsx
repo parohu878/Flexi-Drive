@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useAuth } from '../context/AuthContext';
 import { useReservations } from '../context/ReservationsContext';
 import { useFavorites } from '../context/FavoritesContext';
+import { LanguageContext } from '../context/LanguageContext';
 import { reviewsService } from '../services/api';
 import CarMiniature from './CarMiniature';
 import Icon from './Icon';
@@ -27,6 +28,7 @@ const carPinIcon = (color = '#9b4dca') => L.divIcon({
 });
 
 export default function CarDetail({ car, navigate, showToast, onRequireAuth }) {
+  const { t } = useContext(LanguageContext);
   const { isAuthenticated } = useAuth();
   const { addReservation } = useReservations();
   const { isFavorite, toggleFavorite } = useFavorites();
@@ -37,13 +39,56 @@ export default function CarDetail({ car, navigate, showToast, onRequireAuth }) {
   const [reviews, setReviews] = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
 
+  // Payment states
+  const [payMethod, setPayMethod] = useState('cash');
+  const [savedCard, setSavedCard] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('fd_stripe_card')) || null;
+    } catch {
+      return null;
+    }
+  });
+  const [cardForm, setCardForm] = useState({ number: '', expiry: '', cvc: '', name: '' });
+
+  const handleCardNumberChange = (e) => {
+    let value = e.target.value.replace(/\D/g, '');
+    let formatted = '';
+    for (let i = 0; i < value.length && i < 16; i++) {
+      if (i > 0 && i % 4 === 0) formatted += ' ';
+      formatted += value[i];
+    }
+    setCardForm(prev => ({ ...prev, number: formatted }));
+  };
+
+  const handleCardExpiryChange = (e) => {
+    let value = e.target.value.replace(/\D/g, '');
+    let formatted = '';
+    if (value.length > 0) {
+      formatted = value.substring(0, 2);
+      if (value.length > 2) {
+        formatted += '/' + value.substring(2, 4);
+      }
+    }
+    setCardForm(prev => ({ ...prev, expiry: formatted }));
+  };
+
+  const handleCardCVCChange = (e) => {
+    let value = e.target.value.replace(/\D/g, '').substring(0, 4);
+    setCardForm(prev => ({ ...prev, cvc: value }));
+  };
+
   if (!car) return null;
 
   const price = car.pricePerHour || car.price || 0;
   const ownerName = car.owner?.name || car.ownerName || '';
   const ownerAvatar = car.owner?.avatar || car.avatar || '??';
-  const rating = car.rating || 0;
-  const reviewCount = car.totalReviews || car.reviews || 0;
+  
+  // Calculate dynamically if reviews are loaded, otherwise fallback to car values
+  const reviewCount = reviews.length > 0 ? reviews.length : (car.totalReviews || car.reviews || (car.reviewList ? car.reviewList.length : 0) || 0);
+  const rating = reviews.length > 0 
+    ? parseFloat((reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1))
+    : (car.rating || 5.0);
+
   const dist = car.dist != null ? car.dist : '?';
   const minH = car.minHours || 1;
   const fav = isFavorite(car.id);
@@ -51,15 +96,40 @@ export default function CarDetail({ car, navigate, showToast, onRequireAuth }) {
   const fee = Math.round(total * 0.1);
 
   useEffect(() => {
-    if (activeTab === 'reviews' && car.id && reviews.length === 0) {
+    if (car.id) {
       setReviewsLoading(true);
-      reviewsService.getCarReviews(car.id).then(data => setReviews(data || [])).catch(() => {}).finally(() => setReviewsLoading(false));
+      reviewsService.getCarReviews(car.id)
+        .then(data => setReviews(data || []))
+        .catch(() => {})
+        .finally(() => setReviewsLoading(false));
     }
-  }, [activeTab, car.id]);
+  }, [car.id]);
 
   const handleReserve = async () => {
     if (!isAuthenticated) { onRequireAuth(); return; }
     if (!selectedSlot) { showToast('Selecciona una franja horària primer', 'error'); return; }
+    
+    // Stripe validation if chosen
+    if (payMethod === 'stripe' && !savedCard) {
+      const { number, expiry, cvc, name } = cardForm;
+      if (!number || !expiry || !cvc || !name) {
+        showToast('Completa tots els camps de la targeta', 'error');
+        return;
+      }
+      if (number.replace(/\s/g, '').length < 16) {
+        showToast('Número de targeta invàlid', 'error');
+        return;
+      }
+      const cleanNumber = number.replace(/\s/g, '');
+      const cardData = {
+        last4: cleanNumber.substring(cleanNumber.length - 4),
+        brand: cleanNumber.startsWith('4') ? 'Visa' : cleanNumber.startsWith('5') ? 'Mastercard' : 'Amex',
+        name
+      };
+      localStorage.setItem('fd_stripe_card', JSON.stringify(cardData));
+      setSavedCard(cardData);
+    }
+
     setReserving(true);
     
     // Calcular fechas de inicio y fin
@@ -74,7 +144,7 @@ export default function CarDetail({ car, navigate, showToast, onRequireAuth }) {
     const end = new Date(start.getTime() + hours * 60 * 60 * 1000);
 
     try {
-      await addReservation(car.id, start, end);
+      await addReservation(car.id, start, end, payMethod);
       showToast(`Reserva confirmada! ${car.name} a les ${selectedSlot}`);
       setTimeout(() => navigate('profile'), 1200);
     } catch (err) { 
@@ -166,7 +236,7 @@ export default function CarDetail({ car, navigate, showToast, onRequireAuth }) {
                   { icon: 'seats', label: 'Places', val: `${car.seats} places` },
                   { icon: 'fuel', label: 'Combustible', val: car.fuel },
                   { icon: 'transmission', label: 'Transmissió', val: car.transmission },
-                  { icon: 'clock', label: 'Mín. reserva', val: `${minH} hora` },
+                  { icon: 'clock', label: 'Mín. reserva', val: `${minH} ${minH === 1 ? t('hours_singular') : t('hours_plural')}` },
                   { icon: 'clipboard', label: 'Alquileres', val: reviewCount },
                   { icon: 'clock', label: 'Disponible', val: `${car.availableFrom || '08:00'} – ${car.availableTo || '20:00'}` },
                   { icon: 'star', label: 'Valoració', val: `${rating} / 5` },
@@ -238,14 +308,20 @@ export default function CarDetail({ car, navigate, showToast, onRequireAuth }) {
                 <div className="rs-right">
                   <div className="rs-stars">{Array.from({length:Math.round(rating)}).map((_,i)=><Icon key={i} name="star" size={14} color="#f5c518" />)}</div>
                   <div className="rs-count">{reviewCount} valoracions</div>
-                  <div className="rs-bars">
-                    {[5,4,3,2,1].map(n => (
-                      <div key={n} className="rs-bar-row">
-                        <span className="rs-bar-n">{n}<Icon name="star" size={8} color="var(--td)" /></span>
-                        <div className="rs-bar-track"><div className="rs-bar-fill" style={{ width: n >= 4 ? `${n*16}%` : `${n*8}%` }} /></div>
-                      </div>
-                    ))}
-                  </div>
+                  {reviews.length > 0 && (
+                    <div className="rs-bars">
+                      {[5,4,3,2,1].map(n => {
+                        const countForStar = reviews.filter(r => Math.round(r.rating) === n).length;
+                        const percent = (countForStar / reviews.length) * 100;
+                        return (
+                          <div key={n} className="rs-bar-row">
+                            <span className="rs-bar-n">{n}<Icon name="star" size={8} color="var(--td)" /></span>
+                            <div className="rs-bar-track"><div className="rs-bar-fill" style={{ width: `${percent}%` }} /></div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="reviews-list">
@@ -284,13 +360,41 @@ export default function CarDetail({ car, navigate, showToast, onRequireAuth }) {
             <div className="bp-label"><Icon name="clock" size={12} color="var(--pg)" /> Durada</div>
             <div className="hours-picker">
               <button className="hp-btn" onClick={() => setHours(h => Math.max(minH, h - 1))}>−</button>
-              <span className="hp-val">{hours} hora{hours !== 1 ? 'es' : ''}</span>
+              <span className="hp-val">{hours} {hours === 1 ? t('hours_singular') : t('hours_plural')}</span>
               <button className="hp-btn" onClick={() => setHours(h => Math.min(24, h + 1))}>+</button>
             </div>
-            {minH > 1 && <div className="bp-hint">Mín. {minH} hores per aquest vehicle</div>}
+            {minH > 1 && <div className="bp-hint">Mín. {minH} {t('hours_plural')} per aquest vehicle</div>}
+          </div>
+          <div className="bp-section">
+            <div className="bp-label"><Icon name="card" size={12} color="var(--pg)" /> Mètode de pagament</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer', padding: '10px 12px', background: payMethod === 'cash' ? 'rgba(197, 130, 255, 0.08)' : 'rgba(255,255,255,0.03)', border: payMethod === 'cash' ? '1px solid rgba(197, 130, 255, 0.5)' : '1px solid rgba(197, 130, 255, 0.15)', borderRadius: 8, transition: 'all 0.2s', color: 'var(--t)' }}>
+                <input type="radio" name="payMethod" checked={payMethod === 'cash'} onChange={() => setPayMethod('cash')} style={{ accentColor: 'var(--p)' }} />
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Icon name="money" size={14} color="#5dcaa5" /> Pagar en mà</span>
+              </label>
+              
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer', padding: '10px 12px', background: payMethod === 'stripe' ? 'rgba(197, 130, 255, 0.08)' : 'rgba(255,255,255,0.03)', border: payMethod === 'stripe' ? '1px solid rgba(197, 130, 255, 0.5)' : '1px solid rgba(197, 130, 255, 0.15)', borderRadius: 8, transition: 'all 0.2s', color: 'var(--t)' }}>
+                <input type="radio" name="payMethod" checked={payMethod === 'stripe'} onChange={() => setPayMethod('stripe')} style={{ accentColor: 'var(--p)' }} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Icon name="card" size={14} color="#c47dff" /> Pagar amb Stripe (Targeta)</span>
+                  {savedCard && <span style={{ fontSize: 11, color: 'var(--td)', marginLeft: 20 }}>{savedCard.brand} ···· {savedCard.last4}</span>}
+                </div>
+              </label>
+
+              {payMethod === 'stripe' && !savedCard && (
+                <div className="fade-in" style={{ padding: '12px 14px', background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(197, 130, 255, 0.3)', borderRadius: 8, display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
+                  <input className="field-input" style={{ width: '100%', padding: '8px 12px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12, outline: 'none' }} type="text" placeholder="Número de targeta (ex: 4242...)" value={cardForm.number} onChange={handleCardNumberChange} />
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input className="field-input" style={{ flex: 1, padding: '8px 12px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12, outline: 'none' }} type="text" placeholder="MM/YY" value={cardForm.expiry} onChange={handleCardExpiryChange} />
+                    <input className="field-input" style={{ flex: 1, padding: '8px 12px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12, outline: 'none' }} type="password" placeholder="CVC" value={cardForm.cvc} onChange={handleCardCVCChange} maxLength={4} />
+                  </div>
+                  <input className="field-input" style={{ width: '100%', padding: '8px 12px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12, outline: 'none' }} type="text" placeholder="Nom del titular" value={cardForm.name} onChange={e => setCardForm(prev => ({ ...prev, name: e.target.value }))} />
+                </div>
+              )}
+            </div>
           </div>
           <div className="bp-summary">
-            <div className="bps-row"><span>{price}€ × {hours} hora{hours !== 1 ? 'es' : ''}</span><span>{total}€</span></div>
+            <div className="bps-row"><span>{price}€ × {hours} {hours === 1 ? t('hours_singular') : t('hours_plural')}</span><span>{total}€</span></div>
             <div className="bps-row"><span>Taxa de servei (10%)</span><span>{fee}€</span></div>
             <div className="bps-divider" />
             <div className="bps-row total"><span>Total</span><span>{total + fee}€</span></div>

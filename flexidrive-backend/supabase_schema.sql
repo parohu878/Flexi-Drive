@@ -106,6 +106,7 @@ BEGIN
     
     -- BOOKINGS
     DROP POLICY IF EXISTS "Permitir lectura de reservas a involucrados" ON public.bookings;
+    DROP POLICY IF EXISTS "Permitir lectura de reservas asociadas a reviews" ON public.bookings;
     DROP POLICY IF EXISTS "Permitir inserción de reservas a inquilinos" ON public.bookings;
     DROP POLICY IF EXISTS "Permitir cancelación de reservas a involucrados" ON public.bookings;
     
@@ -142,6 +143,7 @@ CREATE POLICY "Permitir gestión de fotos a propietarios del coche" ON public.ve
 CREATE POLICY "Permitir lectura de reservas a involucrados" ON public.bookings FOR SELECT USING (auth.uid() IN (
     SELECT id_auth FROM public.users WHERE id = inquilino_id OR id = propietario_id
 ));
+CREATE POLICY "Permitir lectura de reservas asociadas a reviews" ON public.bookings FOR SELECT USING (id IN (SELECT booking_id FROM public.reviews));
 CREATE POLICY "Permitir inserción de reservas a inquilinos" ON public.bookings FOR INSERT WITH CHECK (auth.uid() IN (SELECT id_auth FROM public.users WHERE id = inquilino_id));
 CREATE POLICY "Permitir cancelación de reservas a involucrados" ON public.bookings FOR UPDATE USING (auth.uid() IN (
     SELECT id_auth FROM public.users WHERE id = inquilino_id OR id = propietario_id
@@ -241,4 +243,7 @@ BEGIN
   END LOOP;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 9. Columna para almacenar el método de pago
+ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS metodo_pago TEXT DEFAULT 'mano';
 

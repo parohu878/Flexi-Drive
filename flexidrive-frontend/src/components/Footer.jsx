@@ -1,10 +1,28 @@
-import { useContext } from 'react';
+import { useContext, useState } from 'react';
 import { LanguageContext } from '../context/LanguageContext';
 import './Footer.css';
 import Icon from './Icon';
 
-export default function Footer({ navigate, screen }) {
+export default function Footer({ navigate, screen, showToast }) {
   const { t } = useContext(LanguageContext);
+  const [email, setEmail] = useState('');
+
+  const handleSubscribe = (e) => {
+    e.preventDefault();
+    if (!email || !email.includes('@')) {
+      if (showToast) {
+        showToast('Introdueix un correu electrònic vàlid', 'error');
+      } else {
+        alert('Introdueix un correu electrònic vàlid');
+      }
+      return;
+    }
+    localStorage.setItem('fd_newsletter_email', email);
+    if (showToast) {
+      showToast('Subscripció realitzada correctament!', 'success');
+    }
+    setEmail('');
+  };
 
   const links = [
     { id: 'home',    icon: 'home',   label: t('home') },
@@ -92,10 +110,17 @@ export default function Footer({ navigate, screen }) {
           <div className="df-newsletter">
             <div className="dfl-title">{t('news')}</div>
             <p className="df-nl-desc">{t('news_desc')}</p>
-            <div className="df-nl-form">
-              <input className="df-nl-input" type="email" placeholder="el.teu@email.com" aria-label="Email newsletter" />
-              <button className="df-nl-btn">{t('subscribe')}</button>
-            </div>
+            <form className="df-nl-form" onSubmit={handleSubscribe}>
+              <input 
+                className="df-nl-input" 
+                type="email" 
+                placeholder="el.teu@email.com" 
+                aria-label="Email newsletter"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+              />
+              <button type="submit" className="df-nl-btn">{t('subscribe')}</button>
+            </form>
             <div className="df-trust-badges">
               <span className="df-trust-item"><Icon name="lock" size={11} color="#5dcaa5" /> {t('no_spam')}</span>
               <span className="df-trust-item"><Icon name="shield" size={11} color="#5dcaa5" /> {t('data_protected')}</span>

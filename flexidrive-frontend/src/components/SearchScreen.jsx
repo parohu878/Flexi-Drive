@@ -202,7 +202,7 @@ export default function SearchScreen({ navigate, cars: initialCars, loadCars, lo
           <div className="sort-wrap">
             <span className="sort-label">Ordenar per:</span>
             <CustomSelect
-              className="sort-select-custom"
+              className={`sort-select-custom ${viewMode === 'map' ? 'open-upwards' : ''}`}
               value={sortBy}
               onChange={e => setSortBy(e.target.value)}
               options={[

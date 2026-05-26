@@ -211,13 +211,14 @@ export const reservationsService = {
       startTime: new Date(b.fecha_inicio).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       hours: Math.round((new Date(b.fecha_fin) - new Date(b.fecha_inicio)) / 3600000) || 24,
       price: b.precio_total,
-      fee: b.precio_total * 0.1,
-      total: b.precio_total * 1.1,
-      status: b.estado === 'confirmada' ? 'active' : b.estado === 'en curs' ? 'en_curs' : b.estado === 'cancelada' ? 'cancelled' : b.estado,
+      fee: Math.round(b.precio_total * 0.1 * 100) / 100,
+      total: Math.round(b.precio_total * 1.1 * 100) / 100,
+      status: b.estado === 'confirmada' ? 'active' : b.estado === 'en curs' ? 'en_curs' : b.estado === 'cancelada' ? 'cancelled' : b.estado === 'completada' ? 'completed' : b.estado,
       createdAt: b.created_at,
       startDate: b.fecha_inicio,
       endDate: b.fecha_fin,
-      propietarioId: b.propietario_id
+      propietarioId: b.propietario_id,
+      metodo_pago: b.metodo_pago || 'mano'
     }));
   },
 
@@ -226,13 +227,14 @@ export const reservationsService = {
     return reservations.find(r => r.id === id);
   },
 
-  createReservation: async (carId, startDate, endDate) => {
+  createReservation: async (carId, startDate, endDate, paymentMethod) => {
     const bookingRes = await request('/bookings', {
       method: 'POST',
       body: JSON.stringify({
         vehicle_id: carId,
         fecha_inicio: new Date(startDate).toISOString(),
-        fecha_fin: new Date(endDate).toISOString()
+        fecha_fin: new Date(endDate).toISOString(),
+        metodo_pago: paymentMethod || 'mano'
       })
     });
     return bookingRes.booking;

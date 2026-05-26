@@ -477,7 +477,7 @@ export default function ProfileScreen({ navigate, showToast, cars }) {
             <div className="profile-name">{userName}</div>
             <div className="profile-email">{user.email}</div>
             <div className="profile-stats">
-              <div className="pstat"><span className="pstat-n">{stats.total}</span><span className="pstat-l">Reserves</span></div>
+              <div className="pstat"><span className="pstat-n">{stats.active}</span><span className="pstat-l">Reserves</span></div>
               <div className="pstat-sep" />
               <div className="pstat"><span className="pstat-n">{user.rating || '4.8'}<Icon name="star" size={10} color="#f5c518" /></span><span className="pstat-l">Valoració</span></div>
               <div className="pstat-sep" />
@@ -532,9 +532,16 @@ export default function ProfileScreen({ navigate, showToast, cars }) {
                     <div className="rc-info">
                       <div className="rc-name">{r.car?.name || r.car || t('car')}</div>
                       <div className="rc-date"><Icon name="calendar" size={10} color="var(--td)" /> {r.date} · {r.startTime || ''} · {r.hours} {r.hours === 1 ? t('hours_singular') : t('hours_plural')}</div>
+                      <div className="rc-date" style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        {r.metodo_pago === 'stripe' ? (
+                          <><Icon name="card" size={10} color="#5dcaa5" /> Pagat amb Stripe</>
+                        ) : (
+                          <><Icon name="money" size={10} color="#ff9f43" /> Pagar en mà</>
+                        )}
+                      </div>
                     </div>
                     <div className="rc-right">
-                      <div className="rc-price">{r.total || r.price}€</div>
+                      <div className="rc-price">{Number(r.total || r.price || 0).toFixed(2)}€</div>
                       <span className={`rc-status ${r.status}`}>
                         {r.status==='active' && <><Icon name="active" size={8} color="#5dcaa5" /> {t('actives')}</>}
                         {r.status==='en_curs' && <><Icon name="play" size={8} color="#ff9f43" /> {t('en_curs')}</>}
@@ -650,8 +657,8 @@ export default function ProfileScreen({ navigate, showToast, cars }) {
               <h2 className="profile-section-title">Estadístiques</h2>
               <div className="stats-grid">
                 {[
-                  { label: 'Total gastat',    value: `${stats.totalSpent}€`,     icon: 'card', color: '#e040fb' },
-                  { label: 'Total guanyat',   value: `${userStats.earnings}€`,   icon: 'money', color: '#5dcaa5' },
+                  { label: 'Total gastat',    value: `${Number(stats.totalSpent || 0).toFixed(2)}€`,     icon: 'card', color: '#e040fb' },
+                  { label: 'Total guanyat',   value: `${Number(userStats.earnings || 0).toFixed(2)}€`,   icon: 'money', color: '#5dcaa5' },
                   { label: 'Reserves totals', value: stats.total,                icon: 'calendar', color: '#9b4dca' },
                   { label: 'Cotxes publicats',value: myCars.length,              icon: 'car', color: '#4db8ff' },
                   { label: 'Favorits',        value: favorites.length,           icon: 'heart', color: '#ff6b6b' },

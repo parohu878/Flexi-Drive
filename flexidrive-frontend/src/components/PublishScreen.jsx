@@ -145,8 +145,16 @@ const [dragOver, setDragOver] = useState(false);
       }
 
       showToast('Cotxe publicat correctament!');
+      
+      const subscribedEmail = localStorage.getItem('fd_newsletter_email');
+      if (subscribedEmail) {
+        setTimeout(() => {
+          showToast(`Correu enviat a ${subscribedEmail} amb el nou cotxe: ${form.makeModel}!`, 'success');
+        }, 800);
+      }
+
       if (onCarCreated) onCarCreated();
-      setTimeout(() => navigate('profile'), 1000);
+      setTimeout(() => navigate('profile'), 2500);
     } catch (err) { 
       showToast(`${err.message || 'Error al publicar'}`, 'error'); 
     } finally {

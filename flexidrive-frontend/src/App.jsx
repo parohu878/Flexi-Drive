@@ -97,7 +97,7 @@ export default function App() {
         {screen === 'profile' && <ProfileScreen navigate={navigate} showToast={showToast} cars={cars} onRequireAuth={() => setShowAuth(true)} />}
         {screen === 'chat'    && <ChatScreen navigate={navigate} />}
       </main>
-      <Footer navigate={navigate} screen={screen} />
+      <Footer navigate={navigate} screen={screen} showToast={showToast} />
 
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
 

@@ -43,9 +43,9 @@ export function ReservationsProvider({ children }) {
     loadReservations();
   }, [loadReservations]);
 
-  const addReservation = useCallback(async (carId, startDate, endDate) => {
+  const addReservation = useCallback(async (carId, startDate, endDate, paymentMethod) => {
     try {
-      const newRes = await reservationsService.createReservation(carId, startDate, endDate);
+      const newRes = await reservationsService.createReservation(carId, startDate, endDate, paymentMethod);
       await loadReservations();
       return newRes;
     } catch (error) {
@@ -81,7 +81,7 @@ export function ReservationsProvider({ children }) {
     active: reservations.filter(r => r.status === 'active' || r.status === 'en_curs').length,
     completed: reservations.filter(r => r.status === 'completed').length,
     cancelled: reservations.filter(r => r.status === 'cancelada' || r.status === 'cancelled').length,
-    totalSpent: reservations.filter(r => r.status === 'completed').reduce((s, r) => s + (r.total || r.price || 0), 0),
+    totalSpent: Math.round(reservations.filter(r => r.status === 'completed').reduce((s, r) => s + (r.total || r.price || 0), 0) * 100) / 100,
   };
 
   return (
