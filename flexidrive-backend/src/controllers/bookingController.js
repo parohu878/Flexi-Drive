@@ -260,6 +260,48 @@ const bookingController = {
     } catch (error) {
       res.status(400).json({ error: error.message });
     }
+  },
+
+  // Obtener todas las reservas de la plataforma (Admin)
+  getAllBookingsAdmin: async (req, res) => {
+    const supabase = getClient(req);
+    try {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('*, vehicles(*, users!propietario_id(nombre, email, foto_perfil)), users!inquilino_id(nombre, email, foto_perfil)')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      res.json(data);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  },
+
+  // Modificar cualquier reserva (Admin)
+  updateBookingAdmin: async (req, res) => {
+    const supabase = getClient(req);
+    const { id } = req.params;
+    const { estado, fecha_inicio, fecha_fin, precio_total } = req.body;
+    try {
+      const updates = {};
+      if (estado !== undefined) updates.estado = estado;
+      if (fecha_inicio !== undefined) updates.fecha_inicio = fecha_inicio;
+      if (fecha_fin !== undefined) updates.fecha_fin = fecha_fin;
+      if (precio_total !== undefined) updates.precio_total = parseFloat(precio_total);
+
+      const { data, error } = await supabase
+        .from('bookings')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      res.json({ message: 'Reserva actualizada con éxito', booking: data });
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
   }
 };
 

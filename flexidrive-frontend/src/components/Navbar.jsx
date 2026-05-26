@@ -16,6 +16,10 @@ export default function Navbar({ screen, navigate, user, isAuthenticated, onLogi
     { id: 'profile', label: t('profile'), icon: 'user' },
   ];
 
+  if (user?.role === 'admin') {
+    links.push({ id: 'admin', label: 'Admin', icon: 'gear' });
+  }
+
   const handleLogout = () => {
     logout();
     navigate('home');

@@ -220,6 +220,22 @@ const vehicleController = {
     } catch (error) {
       res.status(400).json({ error: error.message });
     }
+  },
+
+  // Obtener todos los vehículos de la plataforma, incluyendo inactivos (Admin)
+  getAllVehiclesAdmin: async (req, res) => {
+    const supabase = getClient(req);
+    try {
+      const { data, error } = await supabase
+        .from('vehicles')
+        .select('*, users!propietario_id(nombre, email, foto_perfil), vehicle_photos(*)')
+        .order('id', { ascending: false });
+
+      if (error) throw error;
+      res.json(data);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
   }
 };
 

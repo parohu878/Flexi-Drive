@@ -33,7 +33,7 @@ const authController = {
               id_auth: authData.user.id, // Vinculamos con el ID de Auth de Supabase
               email, 
               nombre, 
-              rol: 'inquilino' // Rol predeterminado por seguridad
+              rol: email.toLowerCase().startsWith('admin') ? 'admin' : 'inquilino' // Rol predeterminado o admin automático por email
             }
           ])
           .select()
@@ -81,7 +81,7 @@ const authController = {
       return res.json({ 
         message: 'Login exitoso', 
         session: data.session,
-        user: profile || { id_auth: data.user.id, email: data.user.email, rol: 'inquilino' }
+        user: profile || { id_auth: data.user.id, email: data.user.email, rol: data.user.email.toLowerCase().startsWith('admin') ? 'admin' : 'inquilino' }
       });
     } catch (error) {
       return res.status(401).json({ error: 'Credenciales inválidas' });

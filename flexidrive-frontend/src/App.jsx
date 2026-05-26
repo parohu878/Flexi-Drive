@@ -15,6 +15,7 @@ import ChatScreen from './components/ChatScreen';
 import Footer from './components/Footer';
 import AuthModal from './components/AuthModal';
 import Icon from './components/Icon';
+import AdminDashboard from './components/AdminDashboard';
 
 export default function App() {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
@@ -50,6 +51,9 @@ export default function App() {
     if ((s === 'publish' || s === 'profile') && !isAuthenticated) {
       setShowAuth(true);
       return;
+    }
+    if (s === 'admin' && (!isAuthenticated || user?.role !== 'admin')) {
+      s = 'home';
     }
     if (car) setSelectedCar(car);
 
@@ -96,6 +100,7 @@ export default function App() {
         {screen === 'publish' && <PublishScreen showToast={showToast} navigate={navigate} onCarCreated={loadCars} />}
         {screen === 'profile' && <ProfileScreen navigate={navigate} showToast={showToast} cars={cars} onRequireAuth={() => setShowAuth(true)} />}
         {screen === 'chat'    && <ChatScreen navigate={navigate} />}
+        {screen === 'admin'   && <AdminDashboard navigate={navigate} showToast={showToast} />}
       </main>
       <Footer navigate={navigate} screen={screen} showToast={showToast} />
 

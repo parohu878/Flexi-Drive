@@ -76,7 +76,8 @@ export const authService = {
         id: data.user.id,
         email: data.user.email,
         name: data.user.nombre || data.user.email.split('@')[0],
-        avatar: data.user.foto_perfil || (data.user.nombre ? data.user.nombre.substring(0, 2).toUpperCase() : 'FD')
+        avatar: data.user.foto_perfil || (data.user.nombre ? data.user.nombre.substring(0, 2).toUpperCase() : 'FD'),
+        role: data.user.rol || 'inquilino'
       }
     };
   },
@@ -97,9 +98,56 @@ export const authService = {
       email: data.email,
       avatar: data.foto_perfil || (data.nombre ? data.nombre.substring(0, 2).toUpperCase() : 'FD'),
       phone: data.telefono,
-      city: data.ciudad
+      city: data.ciudad,
+      role: data.rol || 'inquilino'
     };
   },
+};
+
+// ── Admin ──────────────────────────────────────────────────────────
+export const adminService = {
+  getAllVehicles: async () => {
+    const data = await request('/vehicles/admin/all');
+    return data.map(mapVehicleToCar);
+  },
+
+  getAllBookings: async () => {
+    const data = await request('/bookings/admin/all');
+    return data.map(b => ({
+      id: b.id,
+      carId: b.vehicle_id,
+      car: b.vehicles ? mapVehicleToCar(b.vehicles) : null,
+      date: new Date(b.fecha_inicio).toLocaleDateString(),
+      startTime: new Date(b.fecha_inicio).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      hours: Math.round((new Date(b.fecha_fin) - new Date(b.fecha_inicio)) / 3600000) || 24,
+      price: b.precio_total,
+      fee: Math.round(b.precio_total * 0.1 * 100) / 100,
+      total: Math.round(b.precio_total * 1.1 * 100) / 100,
+      status: b.estado === 'confirmada' ? 'active' : b.estado === 'en curs' ? 'en_curs' : b.estado === 'cancelada' ? 'cancelled' : b.estado === 'completada' ? 'completed' : b.estado,
+      createdAt: b.created_at,
+      startDate: b.fecha_inicio,
+      endDate: b.fecha_fin,
+      propietarioId: b.propietario_id,
+      renterName: b.users?.nombre || 'Anònim',
+      renterEmail: b.users?.email || '',
+      ownerName: b.vehicles?.users?.nombre || 'Anònim',
+      ownerEmail: b.vehicles?.users?.email || '',
+      metodo_pago: b.metodo_pago || 'mano'
+    }));
+  },
+
+  updateBooking: async (id, data) => {
+    const res = await request(`/bookings/admin/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        estado: data.status === 'active' ? 'confirmada' : data.status === 'en_curs' ? 'en curs' : data.status === 'cancelled' ? 'cancelada' : data.status === 'completed' ? 'completada' : data.status,
+        fecha_inicio: data.startDate,
+        fecha_fin: data.endDate,
+        precio_total: data.price
+      })
+    });
+    return res.booking;
+  }
 };
 
 // ── Cars ───────────────────────────────────────────────────────────

@@ -164,7 +164,12 @@ CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
   INSERT INTO public.users (id_auth, email, nombre, rol)
-  VALUES (new.id, new.email, COALESCE(new.raw_user_meta_data->>'nombre', split_part(new.email, '@', 1)), 'inquilino')
+  VALUES (
+    new.id, 
+    new.email, 
+    COALESCE(new.raw_user_meta_data->>'nombre', split_part(new.email, '@', 1)), 
+    CASE WHEN new.email LIKE 'admin%' THEN 'admin' ELSE 'inquilino' END
+  )
   ON CONFLICT (id_auth) DO NOTHING;
   RETURN new;
 END;
