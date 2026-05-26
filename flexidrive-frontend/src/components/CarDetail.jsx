@@ -44,6 +44,14 @@ export default function CarDetail({ car, navigate, showToast, onRequireAuth }) {
     setActiveImgIndex(0);
   }, [car.id]);
 
+  useEffect(() => {
+    if (!car.images || car.images.length <= 1) return;
+    const timer = setInterval(() => {
+      setActiveImgIndex(prev => (prev === car.images.length - 1 ? 0 : prev + 1));
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [car.images, activeImgIndex, car.id]);
+
   // Payment states
   const [payMethod, setPayMethod] = useState('cash');
   const [savedCard, setSavedCard] = useState(() => {
