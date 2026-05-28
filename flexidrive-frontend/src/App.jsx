@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from './context/AuthContext';
 import { carsService } from './services/api';
+import { getDistance } from './utils/distance';
 // 
 // Fallback to empty list if API fails
 // setCars([]);
@@ -27,6 +28,33 @@ export default function App() {
   const [cars, setCars] = useState([]);
   const [carsLoading, setCarsLoading] = useState(true);
   const [transitioning, setTransitioning] = useState(false);
+  const [userPos, setUserPos] = useState(null);
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setUserPos([pos.coords.latitude, pos.coords.longitude]),
+        () => setUserPos([41.3874, 2.1686])
+      );
+    } else {
+      setUserPos([41.3874, 2.1686]);
+    }
+  }, []);
+
+  const carsWithDistance = cars.map(car => {
+    if (userPos && car.lat && car.lng) {
+      return {
+        ...car,
+        dist: getDistance(userPos[0], userPos[1], car.lat, car.lng)
+      };
+    }
+    return car;
+  });
+
+  const selectedCarWithDistance = selectedCar && userPos && selectedCar.lat && selectedCar.lng ? {
+    ...selectedCar,
+    dist: getDistance(userPos[0], userPos[1], selectedCar.lat, selectedCar.lng)
+  } : selectedCar;
 
   // Load cars from API on mount (with demo fallback)
   useEffect(() => {
@@ -94,9 +122,9 @@ export default function App() {
         onLogin={() => setShowAuth(true)}
       />
       <main style={{ flex: 1 }} className={transitioning ? 'screen-exit' : 'screen-enter'}>
-        {screen === 'home'    && <HomeScreen navigate={navigate} cars={cars} loading={carsLoading} />}
-        {screen === 'search'  && <SearchScreen navigate={navigate} cars={cars} loadCars={loadCars} loading={carsLoading} />}
-        {screen === 'detail'  && <CarDetail car={selectedCar} navigate={navigate} showToast={showToast} onRequireAuth={() => setShowAuth(true)} />}
+        {screen === 'home'    && <HomeScreen navigate={navigate} cars={carsWithDistance} loading={carsLoading} />}
+        {screen === 'search'  && <SearchScreen navigate={navigate} cars={carsWithDistance} loadCars={loadCars} loading={carsLoading} userPos={userPos} />}
+        {screen === 'detail'  && <CarDetail car={selectedCarWithDistance} navigate={navigate} showToast={showToast} onRequireAuth={() => setShowAuth(true)} userPos={userPos} />}
         {screen === 'publish' && <PublishScreen showToast={showToast} navigate={navigate} onCarCreated={loadCars} />}
         {screen === 'profile' && <ProfileScreen navigate={navigate} showToast={showToast} cars={cars} onRequireAuth={() => setShowAuth(true)} />}
         {screen === 'chat'    && <ChatScreen navigate={navigate} />}

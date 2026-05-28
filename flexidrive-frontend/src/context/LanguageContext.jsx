@@ -36,7 +36,7 @@ const translations = {
     no_spam: 'Sense spam',
     data_protected: 'Dades protegides',
     rights: 'Tots els drets reservats.',
-    made_with: 'Fet amb ❤️ a Barcelona',
+    made_with: 'Fet a Barcelona',
     ssl_verified: 'Verificat SSL',
     rgpd: 'RGPD compliant',
     
@@ -180,7 +180,7 @@ const translations = {
     no_spam: 'Sin spam',
     data_protected: 'Datos protegidos',
     rights: 'Todos los derechos reservados.',
-    made_with: 'Hecho con ❤️ en Barcelona',
+    made_with: 'Hecho en Barcelona',
     ssl_verified: 'Verificado SSL',
     rgpd: 'RGPD compliant',
     
@@ -324,7 +324,7 @@ const translations = {
     no_spam: 'No spam',
     data_protected: 'Data protected',
     rights: 'All rights reserved.',
-    made_with: 'Made with ❤️ in Barcelona',
+    made_with: 'Made in Barcelona',
     ssl_verified: 'SSL Verified',
     rgpd: 'GDPR Compliant',
     

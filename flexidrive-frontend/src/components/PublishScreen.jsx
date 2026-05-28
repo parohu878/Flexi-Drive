@@ -125,6 +125,21 @@ const [dragOver, setDragOver] = useState(false);
     }
   };
 
+  const handleLocationBlur = async () => {
+    if (!form.location.trim()) return;
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(form.location.trim())}&limit=1`);
+      const data = await res.json();
+      if (data && data.length > 0) {
+        const lat = parseFloat(data[0].lat);
+        const lng = parseFloat(data[0].lon);
+        setMapPos([lat, lng]);
+      }
+    } catch (e) {
+      console.error('Error geocoding location:', e);
+    }
+  };
+
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
     if (!validateStep3()) return;
@@ -245,7 +260,7 @@ const [dragOver, setDragOver] = useState(false);
                     <Icon name="pin" size={12} /> Utilitzar ubicació actual
                   </button>
                 </label>
-                <input className={`field-input ${errors.location ? 'field-error' : ''}`} type="text" placeholder="Carrer, número, ciutat…" value={form.location} onChange={set('location')} style={{ marginBottom: 12 }} />
+                <input className={`field-input ${errors.location ? 'field-error' : ''}`} type="text" placeholder="Carrer, número, ciutat…" value={form.location} onChange={set('location')} onBlur={handleLocationBlur} style={{ marginBottom: 12 }} />
                 <div style={{ height: 200, width: '100%', borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
                   <MapContainer center={mapPos} zoom={13} style={{ width: '100%', height: '100%' }}>
                     <TileLayer attribution='&copy; Google Maps' url="https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}" />

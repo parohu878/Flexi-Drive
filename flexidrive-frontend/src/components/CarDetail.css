@@ -583,3 +583,116 @@
   transform: scale(1.2);
   box-shadow: 0 0 8px rgba(196, 125, 255, 0.6);
 }
+
+/* ── ZOOM MODAL ── */
+.image-zoom-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.95);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100000;
+  animation: zoomFadeIn 0.25s ease both;
+}
+
+.zoom-close {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 20px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.zoom-close:hover {
+  background: rgba(255, 100, 100, 0.2);
+  border-color: rgba(255, 100, 100, 0.5);
+  color: #ff6464;
+  transform: scale(1.1);
+}
+
+.zoom-content {
+  position: relative;
+  max-width: 90%;
+  max-height: 90vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.zoom-img {
+  max-width: 100%;
+  max-height: 85vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.8), 0 0 30px rgba(155, 77, 202, 0.15);
+  animation: zoomScaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.zoom-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.zoom-btn:hover {
+  background: rgba(196, 125, 255, 0.2);
+  border-color: rgba(196, 125, 255, 0.5);
+  box-shadow: 0 0 16px rgba(196, 125, 255, 0.4);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.zoom-btn.prev {
+  left: 24px;
+}
+
+.zoom-btn.next {
+  right: 24px;
+}
+
+@media (max-width: 768px) {
+  .zoom-btn {
+    width: 40px;
+    height: 40px;
+  }
+  .zoom-btn.prev {
+    left: 10px;
+  }
+  .zoom-btn.next {
+    right: 10px;
+  }
+}
+
+@keyframes zoomFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes zoomScaleUp {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}

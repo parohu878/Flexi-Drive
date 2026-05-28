@@ -53,11 +53,11 @@ export default function AdminDashboard({ navigate, showToast }) {
 
   // Delete vehicle
   const handleDeleteVehicle = async (id) => {
-    if (!window.confirm('Segur que vols desactivar definitivament aquest vehicle?')) return;
+    if (!window.confirm('Segur que vols eliminar definitivament aquest vehicle de la base de dades?')) return;
     try {
       await carsService.deleteCar(id);
-      showToast('Vehicle desactivat correctament');
-      setVehicles(prev => prev.map(v => v.id === id ? { ...v, activo: false } : v));
+      showToast('Vehicle eliminat correctament de la base de dades');
+      setVehicles(prev => prev.filter(v => v.id !== id));
     } catch (err) {
       showToast('Error en esborrar el vehicle', 'error');
     }

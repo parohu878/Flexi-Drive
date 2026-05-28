@@ -189,11 +189,12 @@ const vehicleController = {
     }
   },
 
-  // Eliminar un vehículo (borrado lógico)
+  // Eliminar un vehículo de la base de datos (borrado físico completo)
   deleteVehicle: async (req, res) => {
     const supabase = getClient(req);
     const { id } = req.params;
     try {
+      // 1. Verificar si el vehículo existe
       const { data: vehicle, error: fetchError } = await supabase
         .from('vehicles')
         .select('propietario_id')
@@ -204,19 +205,34 @@ const vehicleController = {
         return res.status(404).json({ error: 'Vehículo no encontrado' });
       }
 
+      // 2. Solo el propietario del coche o el administrador pueden borrar
       if (vehicle.propietario_id !== req.user.id && req.user.rol !== 'admin') {
         return res.status(403).json({ error: 'No tienes permiso para eliminar este vehículo' });
       }
 
+      // 3. Borrado en cascada de los registros relacionados para evitar fallos de integridad referencial (foreign keys)
+      // Eliminar fotos del coche
+      await supabase.from('vehicle_photos').delete().eq('vehicle_id', id);
+      
+      // Eliminar de los favoritos de los usuarios
+      await supabase.from('favorites').delete().eq('vehicle_id', id);
+      
+      // Eliminar las disponibilidades del coche (si existiera la tabla availabilities)
+      await supabase.from('availabilities').delete().eq('vehicle_id', id);
+
+      // Eliminar las reservas asociadas. Las reviews se borrarán automáticamente en cascada en la base de datos.
+      await supabase.from('bookings').delete().eq('vehicle_id', id);
+
+      // 4. Borrar físicamente el vehículo de la base de datos
       const { data, error } = await supabase
         .from('vehicles')
-        .update({ activo: false })
+        .delete()
         .eq('id', id)
         .select()
         .single();
 
       if (error) throw error;
-      res.json({ message: 'Vehículo de-activado con éxito', vehicle: data });
+      res.json({ message: 'Vehículo eliminado físicamente con éxito', vehicle: data });
     } catch (error) {
       res.status(400).json({ error: error.message });
     }

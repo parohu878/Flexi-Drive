@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import { getDistance } from '../utils/distance';
 import 'leaflet/dist/leaflet.css';
 import CarMiniature from './CarMiniature';
 import Icon from './Icon';
@@ -54,7 +55,7 @@ function MapUpdater({ center, viewMode, mapExpanded }) {
   return null;
 }
 
-export default function SearchScreen({ navigate, cars: initialCars, loadCars, loading: parentLoading }) {
+export default function SearchScreen({ navigate, cars: initialCars, loadCars, loading: parentLoading, userPos }) {
   const { isFavorite, toggleFavorite } = useFavorites();
   const [query, setQuery] = useState('');
   const [maxPrice, setMaxPrice] = useState(100);
@@ -62,22 +63,12 @@ export default function SearchScreen({ navigate, cars: initialCars, loadCars, lo
   const [trans, setTrans] = useState('Tots');
   const [sortBy, setSortBy] = useState('dist');
   const [hovered, setHovered] = useState(null);
-  const [userPos, setUserPos] = useState(null);
   const [cars, setCars] = useState(initialCars || []);
   const [loading, setLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [viewMode, setViewMode] = useState('both'); // 'both' | 'map' | 'list'
   const [mapExpanded, setMapExpanded] = useState(false);
   const debouncedQuery = useDebounce(query, 400);
-
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => setUserPos([pos.coords.latitude, pos.coords.longitude]),
-        () => setUserPos([41.3874, 2.1686])
-      );
-    } else { setUserPos([41.3874, 2.1686]); }
-  }, []);
 
   const fetchCars = useCallback(async () => {
     setLoading(true);
@@ -98,7 +89,17 @@ export default function SearchScreen({ navigate, cars: initialCars, loadCars, lo
 
   useEffect(() => { fetchCars(); }, [fetchCars]);
 
-  const sorted = [...cars].sort((a, b) => {
+  const carsWithDistance = cars.map(car => {
+    if (userPos && car.lat && car.lng) {
+      return {
+        ...car,
+        dist: getDistance(userPos[0], userPos[1], car.lat, car.lng)
+      };
+    }
+    return car;
+  });
+
+  const sorted = [...carsWithDistance].sort((a, b) => {
     if (sortBy === 'dist') return (a.dist || 999) - (b.dist || 999);
     if (sortBy === 'price') return (a.pricePerHour || 0) - (b.pricePerHour || 0);
     if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);

@@ -1,5 +1,6 @@
 import { useState, useEffect, useContext } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { createPortal } from 'react-dom';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useAuth } from '../context/AuthContext';
@@ -27,6 +28,16 @@ const carPinIcon = (color = '#9b4dca') => L.divIcon({
   iconSize: [40, 40], iconAnchor: [20, 40], popupAnchor: [0, -40],
 });
 
+function MapUpdater({ center }) {
+  const map = useMap();
+  useEffect(() => {
+    if (center && center[0] && center[1]) {
+      map.setView(center, map.getZoom());
+    }
+  }, [center, map]);
+  return null;
+}
+
 export default function CarDetail({ car, navigate, showToast, onRequireAuth }) {
   const { t } = useContext(LanguageContext);
   const { isAuthenticated } = useAuth();
@@ -39,6 +50,7 @@ export default function CarDetail({ car, navigate, showToast, onRequireAuth }) {
   const [reviews, setReviews] = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [activeImgIndex, setActiveImgIndex] = useState(0);
+  const [zoomImage, setZoomImage] = useState(false);
 
   useEffect(() => {
     setActiveImgIndex(0);
@@ -51,6 +63,18 @@ export default function CarDetail({ car, navigate, showToast, onRequireAuth }) {
     }, 4000);
     return () => clearInterval(timer);
   }, [car.images, activeImgIndex, car.id]);
+
+  // Body scroll lock on image zoom
+  useEffect(() => {
+    if (zoomImage) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [zoomImage]);
 
   // Payment states
   const [payMethod, setPayMethod] = useState('cash');
@@ -207,6 +231,8 @@ export default function CarDetail({ car, navigate, showToast, onRequireAuth }) {
                   src={car.images[activeImgIndex]}
                   alt={`${car.name} - ${activeImgIndex + 1}`}
                   className="carousel-img"
+                  style={{ cursor: 'zoom-in' }}
+                  onClick={() => setZoomImage(true)}
                 />
                 {car.images.length > 1 && (
                   <>
@@ -320,6 +346,7 @@ export default function CarDetail({ car, navigate, showToast, onRequireAuth }) {
                   <div className="detail-map">
                     <MapContainer center={[car.lat, car.lng]} zoom={15} style={{ width: '100%', height: '100%', borderRadius: 12 }} scrollWheelZoom={false} dragging={true} zoomControl={true}>
                       <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>' url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
+                      <MapUpdater center={[car.lat, car.lng]} />
                       <Marker position={[car.lat, car.lng]} icon={carPinIcon(car.color || '#9b4dca')}>
                         <Popup><div style={{ fontFamily: 'Rajdhani', minWidth: 120 }}><strong>{car.name}</strong><br/><span style={{ color: '#aaa' }}>{car.location}</span></div></Popup>
                       </Marker>
@@ -459,6 +486,28 @@ export default function CarDetail({ car, navigate, showToast, onRequireAuth }) {
           </div>
         </aside>
       </div>
+
+      {zoomImage && car.images && car.images.length > 0 && createPortal(
+        <div className="image-zoom-overlay" onClick={() => setZoomImage(false)}>
+          <button className="zoom-close" onClick={() => setZoomImage(false)}>✕</button>
+          
+          <div className="zoom-content" onClick={e => e.stopPropagation()}>
+            <img src={car.images[activeImgIndex]} alt={car.name} className="zoom-img" />
+          </div>
+
+          {car.images.length > 1 && (
+            <>
+              <button type="button" className="zoom-btn prev" onClick={(e) => { e.stopPropagation(); setActiveImgIndex(prev => (prev === 0 ? car.images.length - 1 : prev - 1)); }} aria-label="Anterior">
+                <Icon name="arrowLeft" size={24} color="#fff" />
+              </button>
+              <button type="button" className="zoom-btn next" onClick={(e) => { e.stopPropagation(); setActiveImgIndex(prev => (prev === car.images.length - 1 ? 0 : prev + 1)); }} aria-label="Següent">
+                <Icon name="arrowRight" size={24} color="#fff" />
+              </button>
+            </>
+          )}
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
