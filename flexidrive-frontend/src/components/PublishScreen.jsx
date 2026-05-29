@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useContext } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { carsService } from '../services/api';
 import Icon from './Icon';
@@ -6,6 +6,7 @@ import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-lea
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import CustomSelect from './CustomSelect';
+import { LanguageContext } from '../context/LanguageContext';
 import './PublishScreen.css';
 
 delete L.Icon.Default.prototype._getIconUrl;
@@ -36,6 +37,7 @@ function MapUpdater({ center }) {
 }
 
 export default function PublishScreen({ showToast, navigate, onCarCreated }) {
+  const { t } = useContext(LanguageContext);
   const { isAuthenticated, user } = useAuth();
   const [activeDays, setActiveDays] = useState([0,1,2,3,4]);
   const [step, setStep] = useState(1);
@@ -202,15 +204,15 @@ const [dragOver, setDragOver] = useState(false);
     <div className="publish-page fade-in">
       <div className="publish-inner">
         <div className="pub-header">
-          <h1 className="pub-title">Publica el teu coche</h1>
-          <p className="pub-sub">Comença a guanyar diners deixant el teu vehicle</p>
+          <h1 className="pub-title">{t('publish_title')}</h1>
+          <p className="pub-sub">{t('publish_subtitle')}</p>
         </div>
 
         <div className="steps-nav">
-          {['Vehicle', 'Disponibilitat', 'Preu i fotos'].map((label, i) => (
+          {['step_vehicle', 'step_availability', 'step_price_photos'].map((key, i) => (
             <div key={i} className={`step-nav-item ${step === i+1 ? 'active' : ''} ${step > i+1 ? 'done' : ''}`}>
               <div className="sni-num">{step > i+1 ? <Icon name="check" size={14} /> : i+1}</div>
-              <span className="sni-label">{label}</span>
+              <span className="sni-label">{t(key)}</span>
               {i < 2 && <div className="sni-line" />}
             </div>
           ))}
@@ -219,45 +221,51 @@ const [dragOver, setDragOver] = useState(false);
         <form className="pub-form" onSubmit={handleSubmit}>
           {step === 1 && (
             <div className="form-step fade-in">
-              <h2 className="step-section-title"><Icon name="car" size={16} color="#c47dff" /> Dades del vehicle</h2>
+              <h2 className="step-section-title"><Icon name="car" size={16} color="#c47dff" /> {t('step_details_title')}</h2>
               <div className="field-row-2">
                 <div className="field-group">
-                  <label className="field-label">Marca i model</label>
+                  <label className="field-label">{t('make_model')}</label>
                   <input className={`field-input ${errors.makeModel ? 'field-error' : ''}`} type="text" placeholder="Ex: Seat León 2021" value={form.makeModel} onChange={set('makeModel')} />
                   {errors.makeModel && <span className="field-error-msg">{errors.makeModel}</span>}
                 </div>
                 <div className="field-group">
-                  <label className="field-label">Matrícula</label>
+                  <label className="field-label">{t('matricula')}</label>
                   <input className={`field-input ${errors.matricula ? 'field-error' : ''}`} type="text" placeholder="Ex: 1234ABC" value={form.matricula} onChange={set('matricula')} />
                   {errors.matricula && <span className="field-error-msg">{errors.matricula}</span>}
                 </div>
                 <div className="field-group">
-                  <label className="field-label">Any</label>
+                  <label className="field-label">{t('year')}</label>
                   <input className={`field-input ${errors.year ? 'field-error' : ''}`} type="number" placeholder="2021" value={form.year} onChange={set('year')} />
                   {errors.year && <span className="field-error-msg">{errors.year}</span>}
                 </div>
               </div>
               <div className="field-row-2">
                 <div className="field-group">
-                  <label className="field-label"><Icon name="gauge" size={11} color="#c47dff" /> Quilometratge actual (km)</label>
+                  <label className="field-label"><Icon name="gauge" size={11} color="#c47dff" /> {t('mileage_label')}</label>
                   <input className="field-input" type="number" placeholder="Ex: 45000" value={form.mileage} onChange={set('mileage')} min="0" />
-                  <span className="field-hint">Indica els km actuals del cotxe</span>
+                  <span className="field-hint">{t('mileage_hint')}</span>
                 </div>
                 <div className="field-group">
-                  <label className="field-label">Places</label>
+                  <label className="field-label">{t('seats_label')}</label>
                   <CustomSelect value={form.seats} onChange={set('seats')} options={['2','4','5','7']} />
                 </div>
               </div>
               <div className="field-row-2">
-                <div className="field-group"><label className="field-label">Combustible</label><CustomSelect value={form.fuel} onChange={set('fuel')} options={['Gasolina','Diésel','Eléctrico','Híbrido']} /></div>
-                <div className="field-group"><label className="field-label">Canvi</label><CustomSelect value={form.transmission} onChange={set('transmission')} options={['Manual','Automático']} /></div>
+                <div className="field-group">
+                  <label className="field-label">{t('fuel_label')}</label>
+                  <CustomSelect value={form.fuel} onChange={set('fuel')} options={[t('fuel_gasoline'), t('fuel_diesel'), t('fuel_electric'), t('fuel_hybrid')]} />
+                </div>
+                <div className="field-group">
+                  <label className="field-label">{t('transmission_label')}</label>
+                  <CustomSelect value={form.transmission} onChange={set('transmission')} options={[t('transmissio') === 'Transmission' ? 'Manual' : t('transmissio') === 'Transmisión' ? 'Manual' : 'Manual', t('transmissio') === 'Transmission' ? 'Automatic' : t('transmissio') === 'Transmisión' ? 'Automático' : 'Automàtic']} />
+                </div>
               </div>
               
               <div className="field-group">
                 <label className="field-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span><Icon name="pin" size={11} color="#c47dff" /> Ubicació del cotxe</span>
+                  <span><Icon name="pin" size={11} color="#c47dff" /> {t('car_location_label')}</span>
                   <button type="button" onClick={handleUseCurrentLocation} style={{ background: 'none', border: 'none', color: '#c47dff', cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Icon name="pin" size={12} /> Utilitzar ubicació actual
+                    <Icon name="pin" size={12} /> {t('use_current_location')}
                   </button>
                 </label>
                 <input className={`field-input ${errors.location ? 'field-error' : ''}`} type="text" placeholder="Carrer, número, ciutat…" value={form.location} onChange={set('location')} onBlur={handleLocationBlur} style={{ marginBottom: 12 }} />
@@ -268,84 +276,84 @@ const [dragOver, setDragOver] = useState(false);
                     <LocationMarker />
                   </MapContainer>
                 </div>
-                <span className="field-hint" style={{ marginTop: 8, display: 'block' }}>Fes clic al mapa per ajustar la ubicació exacta</span>
+                <span className="field-hint" style={{ marginTop: 8, display: 'block' }}>{t('click_map_hint')}</span>
                 {errors.location && <span className="field-error-msg">{errors.location}</span>}
               </div>
 
               <div className="field-group">
-                <label className="field-label"><Icon name="gear" size={11} color="#c47dff" /> Equipament del vehicle</label>
+                <label className="field-label"><Icon name="gear" size={11} color="#c47dff" /> {t('equipment_label')}</label>
                 <div className="feature-chips">{ALL_FEATURES.map(f => (<button key={f} type="button" className={`feature-chip ${selectedFeatures.includes(f) ? 'active' : ''}`} onClick={() => toggleFeature(f)}>{selectedFeatures.includes(f) ? <><Icon name="check" size={10} /> </> : ''}{f}</button>))}</div>
-                <div className="feature-count">{selectedFeatures.length} seleccionats</div>
+                <div className="feature-count">{selectedFeatures.length} {t('selected_count')}</div>
               </div>
-              <div className="form-nav"><div /><button type="button" className="btn-primary" onClick={() => goStep(2)}>Continuar <Icon name="arrowRight" size={12} /></button></div>
+              <div className="form-nav"><div /><button type="button" className="btn-primary" onClick={() => goStep(2)}>{t('continue')} <Icon name="arrowRight" size={12} /></button></div>
             </div>
           )}
 
           {step === 2 && (
             <div className="form-step fade-in">
-              <h2 className="step-section-title"><Icon name="calendar" size={16} color="#c47dff" /> Disponibilitat</h2>
+              <h2 className="step-section-title"><Icon name="calendar" size={16} color="#c47dff" /> {t('step_availability')}</h2>
               <div className="field-group">
-                <label className="field-label">Dies disponibles</label>
+                <label className="field-label">{t('days_available_label')}</label>
                 <div className="day-chips">{DAYS.map((d, i) => (<button key={i} type="button" className={`day-chip ${activeDays.includes(i) ? 'on' : ''}`} onClick={() => toggleDay(i)}>{d}</button>))}</div>
               </div>
               <div className="field-row-2">
                 <div className="field-group">
-                  <label className="field-label">Des de</label>
+                  <label className="field-label">{t('from_label')}</label>
                   <CustomSelect value={form.availableFrom} onChange={set('availableFrom')} options={TIME_OPTIONS} />
                 </div>
                 <div className="field-group">
-                  <label className="field-label">Fins a</label>
+                  <label className="field-label">{t('to_label')}</label>
                   <CustomSelect value={form.availableTo} onChange={set('availableTo')} options={TIME_OPTIONS} />
                 </div>
               </div>
               <div className="avail-preview">
-                <div className="ap-label">Vista prèvia</div>
+                <div className="ap-label">{t('preview_label')}</div>
                 <div className="ap-days">{DAYS.map((d, i) => (<div key={i} className={`ap-day ${activeDays.includes(i) ? 'on' : 'off'}`}>{d}</div>))}</div>
                 <div className="ap-time"><Icon name="clock" size={12} /> {form.availableFrom} – {form.availableTo}</div>
               </div>
               <div className="form-nav">
-                <button type="button" className="btn-ghost" onClick={() => setStep(1)}><Icon name="arrowLeft" size={12} /> Enrere</button>
-                <button type="button" className="btn-primary" onClick={() => goStep(3)}>Continuar <Icon name="arrowRight" size={12} /></button>
+                <button type="button" className="btn-ghost" onClick={() => setStep(1)}><Icon name="arrowLeft" size={12} /> {t('back')}</button>
+                <button type="button" className="btn-primary" onClick={() => goStep(3)}>{t('continue')} <Icon name="arrowRight" size={12} /></button>
               </div>
             </div>
           )}
 
           {step === 3 && (
             <div className="form-step fade-in">
-              <h2 className="step-section-title"><Icon name="money" size={16} color="#c47dff" /> Preu i fotos</h2>
+              <h2 className="step-section-title"><Icon name="money" size={16} color="#c47dff" /> {t('step_price_photos')}</h2>
               <div className="field-row-2">
                 <div className="field-group">
-                  <label className="field-label">Preu per hora (€)</label>
+                  <label className="field-label">{t('price_per_hour_label')}</label>
                   <input className={`field-input ${errors.pricePerHour ? 'field-error' : ''}`} type="number" placeholder="Ex: 18" value={form.pricePerHour} onChange={set('pricePerHour')} />
                   {errors.pricePerHour && <span className="field-error-msg">{errors.pricePerHour}</span>}
                 </div>
-                <div className="field-group"><label className="field-label">Preu mínim (hores)</label><input className="field-input" type="number" placeholder="1" value={form.minHours} onChange={set('minHours')} /></div>
+                <div className="field-group"><label className="field-label">{t('min_hours_label')}</label><input className="field-input" type="number" placeholder="1" value={form.minHours} onChange={set('minHours')} /></div>
               </div>
               <div className="field-group">
-                <label className="field-label"><Icon name="camera" size={11} color="#c47dff" /> Fotos del cotxe ({photos.length}/8)</label>
+                <label className="field-label"><Icon name="camera" size={11} color="#c47dff" /> {t('photos_label')} ({photos.length}/8)</label>
                 <div className={`upload-zone ${dragOver ? 'drag-over' : ''} ${photos.length > 0 ? 'has-photos' : ''}`} onDrop={handleDrop} onDragOver={(e) => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)} onClick={() => fileInputRef.current?.click()}>
                   <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={(e) => handleFiles(e.target.files)} />
-                  {photos.length === 0 ? (<><div className="uz-icon"><Icon name="camera" size={32} color="#c47dff" /></div><div className="uz-text">Arrossega o fes clic per pujar fotos</div><div className="uz-hint">JPG, PNG · Màx. 5 MB per foto · Fins a 8 fotos</div></>) : (<div className="uz-add-more"><Icon name="plus" size={14} /> Afegir més fotos</div>)}
+                  {photos.length === 0 ? (<><div className="uz-icon"><Icon name="camera" size={32} color="#c47dff" /></div><div className="uz-text">{t('drag_drop_hint')}</div><div className="uz-hint">JPG, PNG · Màx. 5 MB per foto · Fins a 8 fotos</div></>) : (<div className="uz-add-more"><Icon name="plus" size={14} /> Afegir més fotos</div>)}
                 </div>
                 {photos.length > 0 && (
-                  <div className="photo-previews">{photos.map((photo, i) => (<div key={photo.id} className="photo-preview"><img src={photo.url} alt={`Foto ${i + 1}`} /><button className="photo-remove" onClick={(e) => { e.stopPropagation(); removePhoto(photo.id); }}><Icon name="x" size={10} /></button>{i === 0 && <div className="photo-main-badge">Principal</div>}</div>))}</div>
+                  <div className="photo-previews">{photos.map((photo, i) => (<div key={photo.id} className="photo-preview"><img src={photo.url} alt={`Foto ${i + 1}`} /><button className="photo-remove" onClick={(e) => { e.stopPropagation(); removePhoto(photo.id); }}><Icon name="x" size={10} /></button>{i === 0 && <div className="photo-main-badge">{t('main_photo_badge')}</div>}</div>))}</div>
                 )}
               </div>
-              <div className="field-group"><label className="field-label">Descripció (opcional)</label><textarea className="field-input field-textarea" placeholder="Descriu el teu cotxe, característiques especials, normes d'ús…" rows={4} value={form.description} onChange={set('description')} /></div>
+              <div className="field-group"><label className="field-label">{t('description_optional')}</label><textarea className="field-input field-textarea" placeholder={t('description_placeholder')} rows={4} value={form.description} onChange={set('description')} /></div>
               <div className="form-nav">
-                <button type="button" className="btn-ghost" onClick={() => setStep(2)}><Icon name="arrowLeft" size={12} /> Enrere</button>
-                <button type="submit" className="btn-primary" disabled={loading}>{loading ? 'Publicant...' : <><Icon name="car" size={14} /> Publicar coche</>}</button>
+                <button type="button" className="btn-ghost" onClick={() => setStep(2)}><Icon name="arrowLeft" size={12} /> {t('back')}</button>
+                <button type="submit" className="btn-primary" disabled={loading}>{loading ? t('publishing_btn') : <><Icon name="car" size={14} /> {t('publish_btn')}</>}</button>
               </div>
             </div>
           )}
         </form>
 
         <div className="pub-tips">
-          <h3 className="tips-title">Consells per guanyar més</h3>
+          <h3 className="tips-title">{t('tips_title')}</h3>
           {[
-            { icon: 'camera', t: 'Fotos de qualitat', d: 'Els cotxes amb 5+ fotos reben 3x més reserves.' },
-            { icon: 'money', t: 'Preu competitiu', d: 'Revisa preus similars a la teva zona.' },
-            { icon: 'star', t: 'Respon ràpid', d: 'Els propietaris amb resposta <1h reben més valoracions positives.' },
+            { icon: 'camera', t: t('tip1_title'), d: t('tip1_desc') },
+            { icon: 'money', t: t('tip2_title'), d: t('tip2_desc') },
+            { icon: 'star', t: t('tip3_title'), d: t('tip3_desc') },
           ].map(tip => (
             <div className="tip-card" key={tip.t}>
                <div className="tip-icon"><Icon name={tip.icon} size={18} color="#c47dff" /></div>
@@ -353,9 +361,9 @@ const [dragOver, setDragOver] = useState(false);
             </div>
           ))}
           <div className="earnings-estimate">
-            <div className="ee-label">Guanys estimats</div>
-            <div className="ee-amount">+ {estimatedEarnings}€ <span>/mes</span></div>
-            <div className="ee-sub">Basat en {activeDays.length} dies/setmana · {estimatedPrice}€/h</div>
+            <div className="ee-label">{t('estimated_earnings')}</div>
+            <div className="ee-amount">+ {estimatedEarnings}€ <span>/{t('per_month')}</span></div>
+            <div className="ee-sub">{t('based_on_days').replace('{days}', activeDays.length).replace('{price}', estimatedPrice)}</div>
           </div>
         </div>
       </div>

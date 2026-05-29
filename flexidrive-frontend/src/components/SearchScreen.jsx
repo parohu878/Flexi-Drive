@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useContext } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { getDistance } from '../utils/distance';
+import { LanguageContext } from '../context/LanguageContext';
 import 'leaflet/dist/leaflet.css';
 import CarMiniature from './CarMiniature';
 import Icon from './Icon';
@@ -56,6 +57,7 @@ function MapUpdater({ center, viewMode, mapExpanded }) {
 }
 
 export default function SearchScreen({ navigate, cars: initialCars, loadCars, loading: parentLoading, userPos }) {
+  const { t } = useContext(LanguageContext);
   const { isFavorite, toggleFavorite } = useFavorites();
   const [query, setQuery] = useState('');
   const [maxPrice, setMaxPrice] = useState(100);
@@ -114,37 +116,47 @@ export default function SearchScreen({ navigate, cars: initialCars, loadCars, lo
   return (
     <div className="search-page">
       <button className="mobile-filter-toggle" onClick={() => setSidebarOpen(v => !v)}>
-        <Icon name="filter" size={14} /> Filtres
+        <Icon name="filter" size={14} /> {t('filters')}
         {activeFilters > 0 && <span className="filter-count">{activeFilters}</span>}
       </button>
 
       <aside className={`search-sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
-          <h2 className="sidebar-title">Filtres</h2>
-          <button className="sidebar-reset" onClick={resetFilters}>Reiniciar</button>
+          <h2 className="sidebar-title">{t('filters')}</h2>
+          <button className="sidebar-reset" onClick={resetFilters}>{t('reset')}</button>
         </div>
         <div className="sf-group">
-          <label className="sf-label">Cerca</label>
+          <label className="sf-label">{t('search_label')}</label>
           <div className="sf-input-wrap">
             <Icon name="search" size={13} color="var(--td)" className="sf-search-icon" />
-            <input className="sf-input" type="text" placeholder="Zona, cotxe, propietari…" value={query} onChange={e => setQuery(e.target.value)} />
+            <input className="sf-input" type="text" placeholder={t('search_placeholder')} value={query} onChange={e => setQuery(e.target.value)} />
           </div>
         </div>
         <div className="sf-group">
-          <label className="sf-label">Preu màxim: <span className="sf-val">{maxPrice}€/h</span></label>
+          <label className="sf-label">{t('max_price')}: <span className="sf-val">{maxPrice}€/h</span></label>
           <input className="sf-range" type="range" min="5" max="100" value={maxPrice} onChange={e => setMaxPrice(+e.target.value)} />
           <div className="sf-range-labels"><span>5€</span><span>100€</span></div>
         </div>
         <div className="sf-group">
-          <label className="sf-label">Combustible</label>
-          <div className="sf-chips">{FUEL_OPTS.map(o => (<button key={o} className={`sf-chip ${fuel === o ? 'active' : ''}`} onClick={() => setFuel(o)}>{o}</button>))}</div>
+          <label className="sf-label">{t('combustible')}</label>
+          <div className="sf-chips">{FUEL_OPTS.map(o => {
+            const translatedFuel = o === 'Tots' ? t('all_fuels') : o;
+            return <button key={o} className={`sf-chip ${fuel === o ? 'active' : ''}`} onClick={() => setFuel(o)}>{translatedFuel}</button>;
+          })}</div>
         </div>
         <div className="sf-group">
-          <label className="sf-label">Canvi</label>
-          <div className="sf-chips">{TRANS_OPTS.map(o => (<button key={o} className={`sf-chip ${trans === o ? 'active' : ''}`} onClick={() => setTrans(o)}>{o}</button>))}</div>
+          <label className="sf-label">{t('transmission_label')}</label>
+          <div className="sf-chips">{TRANS_OPTS.map(o => {
+            const labelMap = { 
+              'Tots': t('all_fuels'), 
+              'Manual': t('transmissio') === 'Transmission' ? 'Manual' : t('transmissio') === 'Transmisión' ? 'Manual' : 'Manual', 
+              'Automático': t('transmissio') === 'Transmission' ? 'Automatic' : t('transmissio') === 'Transmisión' ? 'Automático' : 'Automàtic' 
+            };
+            return <button key={o} className={`sf-chip ${trans === o ? 'active' : ''}`} onClick={() => setTrans(o)}>{labelMap[o] || o}</button>;
+          })}</div>
         </div>
         <div className="sf-group sf-summary">
-          <div className="sf-summary-text"><strong>{sorted.length}</strong> cotxes disponibles</div>
+          <div className="sf-summary-text"><strong>{sorted.length}</strong> {t('cars_available')}</div>
         </div>
       </aside>
 
@@ -154,7 +166,7 @@ export default function SearchScreen({ navigate, cars: initialCars, loadCars, lo
           <MapContainer center={mapCenter} zoom={13} style={{ width: '100%', height: '100%', borderRadius: 'inherit' }} scrollWheelZoom={true}>
             <TileLayer attribution='&copy; Google Maps' url="https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}" />
             <MapUpdater center={mapCenter} viewMode={viewMode} mapExpanded={mapExpanded} />
-            {userPos && <Marker position={userPos} icon={userIcon}><Popup><strong>La teva posició</strong></Popup></Marker>}
+            {userPos && <Marker position={userPos} icon={userIcon}><Popup><strong>{t('your_position')}</strong></Popup></Marker>}
             {carsWithCoords.map(car => (
               <Marker key={car.id} position={[car.lat, car.lng]} icon={carIcon(car.color || '#9b4dca', hovered === car.id)}
                 eventHandlers={{ mouseover: () => setHovered(car.id), mouseout: () => setHovered(null) }}>
@@ -164,10 +176,10 @@ export default function SearchScreen({ navigate, cars: initialCars, loadCars, lo
                     <span style={{ color: '#aaa', fontSize: 12 }}>{car.location}</span><br/>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '6px 0' }}>
                       <span style={{ color: '#9b4dca', fontWeight: 700, fontSize: 18, fontFamily: 'Orbitron' }}>{car.pricePerHour}€</span>
-                      <span style={{ color: '#aaa', fontSize: 12 }}>/hora</span>
+                      <span style={{ color: '#aaa', fontSize: 12 }}>/{t('hours_singular')}</span>
                       <span style={{ marginLeft: 'auto', color: '#f5c518', fontSize: 12 }}>{car.rating}</span>
                     </div>
-                    <button onClick={() => navigate('detail', car)} style={{ width: '100%', padding: '6px 12px', background: 'linear-gradient(135deg, #9b4dca, #e040fb)', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 700, fontFamily: 'Rajdhani', letterSpacing: '.05em', textTransform: 'uppercase' }}>Reservar</button>
+                    <button onClick={() => navigate('detail', car)} style={{ width: '100%', padding: '6px 12px', background: 'linear-gradient(135deg, #9b4dca, #e040fb)', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 700, fontFamily: 'Rajdhani', letterSpacing: '.05em', textTransform: 'uppercase' }}>{t('reserve_now_btn')}</button>
                   </div>
                 </Popup>
               </Marker>
@@ -175,41 +187,41 @@ export default function SearchScreen({ navigate, cars: initialCars, loadCars, lo
           </MapContainer>
           
           {viewMode === 'both' && (
-            <button className="map-expand-btn" onClick={() => setMapExpanded(v => !v)} title={mapExpanded ? "Reduir mapa" : "Ampliar mapa"}>
+            <button className="map-expand-btn" onClick={() => setMapExpanded(v => !v)} title={mapExpanded ? t('collapse') : t('expand')}>
               <Icon name={mapExpanded ? 'collapse' : 'expand'} size={14} />
             </button>
           )}
           
-          <div className="map-badge">{sorted.length} cotxes disponibles</div>
+          <div className="map-badge">{sorted.length} {t('cars_available')}</div>
         </div>
         )}
 
         <div className="results-header">
-          <span className="results-count">{loading ? <span style={{ color: 'var(--td)' }}>Cercant...</span> : <><strong>{sorted.length}</strong> cotxe{sorted.length !== 1 ? 's' : ''} trobat{sorted.length !== 1 ? 's' : ''}</>}</span>
+          <span className="results-count">{loading ? <span style={{ color: 'var(--td)' }}>{t('searching_cars')}</span> : <><strong>{sorted.length}</strong> {t('cars_available')}</>}</span>
           <div className="view-toggle">
-            <button className={`view-btn ${viewMode === 'list' ? 'active' : ''}`} onClick={() => setViewMode('list')} title="Vista llista">
+            <button className={`view-btn ${viewMode === 'list' ? 'active' : ''}`} onClick={() => setViewMode('list')} title={t('list_view')}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="14" height="14"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-              Llista
+              {t('list_view')}
             </button>
-            <button className={`view-btn ${viewMode === 'both' ? 'active' : ''}`} onClick={() => setViewMode('both')} title="Vista mixta (Ambdós)">
+            <button className={`view-btn ${viewMode === 'both' ? 'active' : ''}`} onClick={() => setViewMode('both')} title={t('both_view')}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="14" height="14"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="12" x2="21" y2="12"/></svg>
-              Ambdós
+              {t('both_view')}
             </button>
-            <button className={`view-btn ${viewMode === 'map' ? 'active' : ''}`} onClick={() => setViewMode('map')} title="Vista mapa complet">
+            <button className={`view-btn ${viewMode === 'map' ? 'active' : ''}`} onClick={() => setViewMode('map')} title={t('map_view')}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="14" height="14"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
-              Mapa
+              {t('map_view')}
             </button>
           </div>
           <div className="sort-wrap">
-            <span className="sort-label">Ordenar per:</span>
+            <span className="sort-label">{t('sort_by')}:</span>
             <CustomSelect
               className={`sort-select-custom ${viewMode === 'map' ? 'open-upwards' : ''}`}
               value={sortBy}
               onChange={e => setSortBy(e.target.value)}
               options={[
-                { value: 'dist', label: 'Distància' },
-                { value: 'price', label: 'Preu' },
-                { value: 'rating', label: 'Valoració' }
+                { value: 'dist', label: t('distance') },
+                { value: 'price', label: t('price') },
+                { value: 'rating', label: t('rating') }
               ]}
             />
           </div>
@@ -218,9 +230,9 @@ export default function SearchScreen({ navigate, cars: initialCars, loadCars, lo
         {viewMode !== 'map' && (
           <div className="results-list">
             {!loading && sorted.length === 0 && (
-              <div className="empty-state"><div className="empty-icon"><Icon name="search" size={36} color="var(--td)" /></div><p>Cap cotxe coincideix amb els filtres</p><button className="btn-ghost-sm" onClick={resetFilters}>Reiniciar filtres</button></div>
+              <div className="empty-state"><div className="empty-icon"><Icon name="search" size={36} color="var(--td)" /></div><p>{t('no_cars_match')}</p><button className="btn-ghost-sm" onClick={resetFilters}>{t('reset_filters')}</button></div>
             )}
-            {loading && <div style={{ textAlign: 'center', padding: 40, color: 'var(--td)' }}><div className="app-loader" style={{ width: 28, height: 28, borderWidth: 2 }} /><div style={{ marginTop: 10 }}>Cercant cotxes...</div></div>}
+            {loading && <div style={{ textAlign: 'center', padding: 40, color: 'var(--td)' }}><div className="app-loader" style={{ width: 28, height: 28, borderWidth: 2 }} /><div style={{ marginTop: 10 }}>{t('searching_cars')}</div></div>}
             {!loading && sorted.map(car => {
             const price = car.pricePerHour || car.price;
             const ownerName = car.owner?.name || car.user || '';
@@ -240,21 +252,21 @@ export default function SearchScreen({ navigate, cars: initialCars, loadCars, lo
                 <div className="cr-info">
                   <div className="cr-name">{car.name}</div>
                   <div className="cr-badges">
-                    <span className="badge badge-avail">Disponible</span>
+                    <span className="badge badge-avail">{t('available')}</span>
                     <span className="badge badge-dist">{dist} km</span>
                     <span className="badge badge-fuel">{car.fuel}</span>
                     <span className="badge badge-trans">{car.transmission}</span>
                   </div>
-                  <div className="cr-location"><Icon name="pin" size={11} color="var(--td)" /> {car.location} · Propietari: {ownerName}</div>
+                  <div className="cr-location"><Icon name="pin" size={11} color="var(--td)" /> {car.location} · {t('owner')}: {ownerName}</div>
                 </div>
                 <div className="cr-right">
-                  <div className="cr-price">{price}€<span>/h</span></div>
+                  <div className="cr-price">{price}€<span>/{t('hours_singular').substring(0,1)}</span></div>
                   <div className="cr-rating"><Icon name="star" size={11} color="#f5c518" /> {rating} ({reviews})</div>
                   <div className="cr-actions">
                     <button className={`fav-btn fav-sm ${fav ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); toggleFavorite(car.id); }}>
                       <Icon name={fav ? 'heart' : 'heartOutline'} size={12} color={fav ? '#e040fb' : 'rgba(255,255,255,.5)'} fill={fav ? '#e040fb' : 'none'} />
                     </button>
-                    <button className="btn-primary cr-btn">Veure <Icon name="arrowRight" size={11} /></button>
+                    <button className="btn-primary cr-btn">{t('view')} <Icon name="arrowRight" size={11} /></button>
                   </div>
                 </div>
               </div>
